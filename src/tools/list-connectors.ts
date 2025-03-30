@@ -1,14 +1,18 @@
+import { z } from "zod";
 import { ConnectorManager } from '../connectors/manager.js';
 import { ConnectorRegistry } from '../connectors/interface.js';
 import { createToolSuccessResponse } from '../utils/response-formatter.js';
 import { isDemoMode } from '../config/env.js';
+
+// Empty schema for list_connectors tool to prevent protocol validation errors
+export const listConnectorsSchema = {};
 
 /**
  * list_connectors tool handler
  * Lists all available database connectors and their sample DSNs
  * Indicates which connector is active based on current DSN
  */
-export async function listConnectorsToolHandler(_args: {}, _extra: any) {
+export async function listConnectorsToolHandler(_args: {} | undefined, _extra: any) {
   const samples = ConnectorRegistry.getAllSampleDSNs();
   
   // Get active connector if possible
