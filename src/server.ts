@@ -76,16 +76,22 @@ See documentation for more details on configuring database connections.
       process.exit(1);
     }
 
-    // Create MCP server
-    const server = new McpServer({
-      name: SERVER_NAME,
-      version: SERVER_VERSION,
-    });
+    // Create MCP server factory function for HTTP transport
+    const createServer = () => {
+      const server = new McpServer({
+        name: SERVER_NAME,
+        version: SERVER_VERSION,
+      });
 
-    // Register resources, tools, and prompts
-    registerResources(server);
-    registerTools(server);
-    registerPrompts(server);
+      // Register resources, tools, and prompts
+      registerResources(server);
+      registerTools(server);
+      registerPrompts(server);
+      
+      return server;
+    };
+
+    // Create server factory function (will be used for both STDIO and HTTP transports)
 
     // Create connector manager and connect to database
     const connectorManager = new ConnectorManager();
@@ -156,25 +162,20 @@ See documentation for more details on configuring database connections.
         next();
       });
 
-      // Create a single transport instance that manages multiple sessions
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => `session_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-        onsessioninitialized: (sessionId: string) => {
-          console.error(`Session initialized: ${sessionId}`);
-        },
-        enableJsonResponse: false // Use SSE streaming
-      });
-
-      // Connect the server to the transport once
-      await server.connect(transport);
-
       // Main endpoint for streamable HTTP transport
-      app.all("/message", async (req, res) => {
+      app.post("/message", async (req, res) => {
         try {
-          // Handle the request (works for GET, POST, DELETE)
-          // Pass the parsed body for POST requests
-          const parsedBody = req.method === 'POST' ? req.body : undefined;
-          await transport.handleRequest(req, res, parsedBody);
+          // In stateless mode, create a new instance of transport and server for each request
+          // to ensure complete isolation. A single instance would cause request ID collisions
+          // when multiple clients connect concurrently.
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: undefined, // Disable session management for stateless mode
+            enableJsonResponse: false // Use SSE streaming
+          });
+          const server = createServer();
+
+          await server.connect(transport);
+          await transport.handleRequest(req, res, req.body);
         } catch (error) {
           console.error("Error handling request:", error);
           if (!res.headersSent) {
@@ -194,6 +195,7 @@ See documentation for more details on configuring database connections.
       });
     } else {
       // Set up STDIO transport
+      const server = createServer();
       const transport = new StdioServerTransport();
       console.error("Starting with STDIO transport");
       await server.connect(transport);
