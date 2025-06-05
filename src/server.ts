@@ -189,9 +189,9 @@ See documentation for more details on configuring database connections.
       const portData = resolvePort();
       const port = portData.port;
       console.error(`Port source: ${portData.source}`);
-      app.listen(port, 'localhost', () => {
-        console.error(`DBHub server listening at http://localhost:${port}`);
-        console.error(`Connect to MCP server at http://localhost:${port}/message`);
+      app.listen(port, '0.0.0.0', () => {
+        console.error(`DBHub server listening at http://0.0.0.0:${port}`);
+        console.error(`Connect to MCP server at http://0.0.0.0:${port}/message`);
       });
     } else {
       // Set up STDIO transport
