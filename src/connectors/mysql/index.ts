@@ -465,24 +465,32 @@ export class MySQLConnector implements Connector {
     }
 
     try {
-      // Use native multi-statement support (enabled in connection config)
-      // MySQL2 with multipleStatements: true handles multiple statements automatically
-      const results = (await this.pool.query(sql)) as any;
+      // Use pool.query with multipleStatements: true support
+      const results = await this.pool.query(sql) as any;
       
-      // Handle both single and multiple statement results
-      if (Array.isArray(results[0])) {
-        // Multiple statements result - flatten all rows
+      // MySQL2 with multipleStatements returns:
+      // - Single statement: [rows, fields] 
+      // - Multiple statements: [array_of_results, fields] where array_of_results contains [rows, fields] for each statement
+      
+      const [firstResult] = results;
+      
+      // Check if this is a multi-statement result by seeing if firstResult[0] is also an array
+      // indicating it contains multiple [rows, fields] pairs
+      if (Array.isArray(firstResult) && firstResult.length > 0 && 
+          Array.isArray(firstResult[0]) && firstResult[0].length === 2) {
+        // Multiple statements - firstResult is an array of [rows, fields] pairs
         let allRows: any[] = [];
-        for (const result of results[0]) {
-          if (Array.isArray(result) && result.length > 0) {
-            allRows.push(...result);
+        
+        for (const [rows, _fields] of firstResult) {
+          if (Array.isArray(rows)) {
+            allRows.push(...rows);
           }
         }
+        
         return { rows: allRows };
       } else {
-        // Single statement result
-        const [rows, fields] = results;
-        return { rows, fields };
+        // Single statement - firstResult is the rows array directly
+        return { rows: Array.isArray(firstResult) ? firstResult : [] };
       }
     } catch (error) {
       console.error("Error executing query:", error);

@@ -467,30 +467,32 @@ export class MariaDBConnector implements Connector {
     }
 
     try {
-      // Use native multi-statement support (enabled in connection config)
-      // MariaDB with multipleStatements: true handles multiple statements automatically
-      const results = (await this.pool.query(sql)) as any;
+      // Use pool.query with multipleStatements: true support
+      const results = await this.pool.query(sql) as any;
       
-      // Handle both single and multiple statement results
-      if (Array.isArray(results)) {
-        // Check if this is a multi-statement result (array of result sets)
-        if (results.length > 1 || (results[0] && Array.isArray(results[0]))) {
-          // Multiple statements result - flatten all rows
-          let allRows: any[] = [];
-          for (const result of results) {
-            if (Array.isArray(result) && result.length > 0) {
-              allRows.push(...result);
-            }
+      // MariaDB with multipleStatements returns:
+      // - Single statement: [rows, fields] 
+      // - Multiple statements: [array_of_results, fields] where array_of_results contains [rows, fields] for each statement
+      
+      const [firstResult] = results;
+      
+      // Check if this is a multi-statement result by seeing if firstResult[0] is also an array
+      // indicating it contains multiple [rows, fields] pairs
+      if (Array.isArray(firstResult) && firstResult.length > 0 && 
+          Array.isArray(firstResult[0]) && firstResult[0].length === 2) {
+        // Multiple statements - firstResult is an array of [rows, fields] pairs
+        let allRows: any[] = [];
+        
+        for (const [rows, _fields] of firstResult) {
+          if (Array.isArray(rows)) {
+            allRows.push(...rows);
           }
-          return { rows: allRows };
-        } else {
-          // Single statement result
-          const [rows, fields] = results;
-          return { rows, fields };
         }
+        
+        return { rows: allRows };
       } else {
-        // Single statement result (non-array format)
-        return { rows: results };
+        // Single statement - firstResult is the rows array directly
+        return { rows: Array.isArray(firstResult) ? firstResult : [] };
       }
     } catch (error) {
       console.error("Error executing query:", error);
