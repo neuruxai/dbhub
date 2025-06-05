@@ -140,21 +140,21 @@ export function resolveDSN(): { dsn: string; source: string; isDemo?: boolean } 
 
 /**
  * Resolve transport type from command line args or environment variables
- * Returns 'stdio' or 'sse', with 'stdio' as the default
+ * Returns 'stdio' or 'http' (streamable HTTP), with 'stdio' as the default
  */
-export function resolveTransport(): { type: "stdio" | "sse"; source: string } {
+export function resolveTransport(): { type: "stdio" | "http"; source: string } {
   // Get command line arguments
   const args = parseCommandLineArgs();
 
   // 1. Check command line arguments first (highest priority)
   if (args.transport) {
-    const type = args.transport === "sse" ? "sse" : "stdio";
+    const type = args.transport === "http" ? "http" : "stdio";
     return { type, source: "command line argument" };
   }
 
   // 2. Check environment variables
   if (process.env.TRANSPORT) {
-    const type = process.env.TRANSPORT === "sse" ? "sse" : "stdio";
+    const type = process.env.TRANSPORT === "http" ? "http" : "stdio";
     return { type, source: "environment variable" };
   }
 
@@ -166,8 +166,8 @@ export function resolveTransport(): { type: "stdio" | "sse"; source: string } {
  * Resolve port from command line args or environment variables
  * Returns port number with 8080 as the default
  *
- * Note: The port option is only applicable when using --transport=sse
- * as it controls the HTTP server port for SSE connections.
+ * Note: The port option is only applicable when using --transport=http
+ * as it controls the HTTP server port for streamable HTTP connections.
  */
 export function resolvePort(): { port: number; source: string } {
   // Get command line arguments

@@ -28,9 +28,9 @@ DBHub is a universal database gateway implementing the Model Context Protocol (M
       MCP Clients           MCP Server             Databases
 ```
 
-## Demo SSE Endpoint
+## Demo HTTP Endpoint
 
-https://demo.dbhub.ai/sse connects a [sample employee database](https://github.com/bytebase/employee-sample-database). You can point Cursor or MCP Inspector to it to see it in action.
+https://demo.dbhub.ai/message connects a [sample employee database](https://github.com/bytebase/employee-sample-database). You can point Cursor or MCP Inspector to it to see it in action.
 
 ![mcp-inspector](https://raw.githubusercontent.com/bytebase/dbhub/main/resources/images/mcp-inspector.webp)
 
@@ -71,7 +71,7 @@ docker run --rm --init \
    --name dbhub \
    --publish 8080:8080 \
    bytebase/dbhub \
-   --transport sse \
+   --transport http \
    --port 8080 \
    --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
 ```
@@ -82,7 +82,7 @@ docker run --rm --init \
    --name dbhub \
    --publish 8080:8080 \
    bytebase/dbhub \
-   --transport sse \
+   --transport http \
    --port 8080 \
    --demo
 ```
@@ -93,7 +93,7 @@ docker run --rm --init \
    --name dbhub \
    --publish 8080:8080 \
    bytebase/dbhub \
-   --transport sse \
+   --transport http \
    --port 8080 \
    --dsn "oracle://username:password@localhost:1521/service_name"
 ```
@@ -104,7 +104,7 @@ docker run --rm --init \
    --name dbhub \
    --publish 8080:8080 \
    bytebase/dbhub-oracle-thick \
-   --transport sse \
+   --transport http \
    --port 8080 \
    --dsn "oracle://username:password@localhost:1521/service_name"
 ```
@@ -113,12 +113,12 @@ docker run --rm --init \
 
 ```bash
 # PostgreSQL example
-npx @bytebase/dbhub --transport sse --port 8080 --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
+npx @bytebase/dbhub --transport http --port 8080 --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
 ```
 
 ```bash
 # Demo mode with sample employee database
-npx @bytebase/dbhub --transport sse --port 8080 --demo
+npx @bytebase/dbhub --transport http --port 8080 --demo
 ```
 
 > Note: The demo mode includes a bundled SQLite sample "employee" database with tables for employees, departments, salaries, and more.
@@ -170,7 +170,7 @@ npx @bytebase/dbhub --transport sse --port 8080 --demo
 
 ![cursor](https://raw.githubusercontent.com/bytebase/dbhub/main/resources/images/cursor.webp)
 
-- Cursor supports both `stdio` and `sse`.
+- Cursor supports both `stdio` and `http`.
 - Follow [Cursor MCP guide](https://docs.cursor.com/context/model-context-protocol) and make sure to use [Agent](https://docs.cursor.com/chat/agent) mode.
 
 ## Usage
@@ -302,9 +302,9 @@ Extra query parameters:
   npx @bytebase/dbhub --transport stdio --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
   ```
 
-- **sse** - for browser and network clients:
+- **http** - for browser and network clients:
   ```bash
-  npx @bytebase/dbhub --transport sse --port 5678 --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
+  npx @bytebase/dbhub --transport http --port 5678 --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
   ```
 
 ### Command line options
@@ -313,8 +313,8 @@ Extra query parameters:
 | --------- | --------------------------------------------------------------- | ---------------------------- |
 | demo      | Run in demo mode with sample employee database                  | `false`                      |
 | dsn       | Database connection string                                      | Required if not in demo mode |
-| transport | Transport mode: `stdio` or `sse`                                | `stdio`                      |
-| port      | HTTP server port (only applicable when using `--transport=sse`) | `8080`                       |
+| transport | Transport mode: `stdio` or `http`                               | `stdio`                      |
+| port      | HTTP server port (only applicable when using `--transport=http`) | `8080`                       |
 | readonly  | Restrict SQL execution to read-only operations                  | `false`                      |
 
 The demo mode uses an in-memory SQLite database loaded with the [sample employee database](https://github.com/bytebase/dbhub/tree/main/resources/employee-sqlite) that includes tables for employees, departments, titles, salaries, department employees, and department managers. The sample database includes SQL scripts for table creation, data loading, and testing.
@@ -367,17 +367,17 @@ The project includes pre-commit hooks to run tests automatically before each com
 TRANSPORT=stdio DSN="postgres://user:password@localhost:5432/dbname?sslmode=disable" npx @modelcontextprotocol/inspector node /path/to/dbhub/dist/index.js
 ```
 
-#### SSE
+#### HTTP
 
 ```bash
-# Start DBHub with SSE transport
-pnpm dev --transport=sse --port=8080
+# Start DBHub with HTTP transport
+pnpm dev --transport=http --port=8080
 
 # Start the MCP Inspector in another terminal
 npx @modelcontextprotocol/inspector
 ```
 
-Connect to the DBHub server `/sse` endpoint
+Connect to the DBHub server `/message` endpoint
 
 ## Contributors
 

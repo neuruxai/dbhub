@@ -14,7 +14,7 @@
   - Set `DB_CONNECTOR_TYPE` to select a connector with its default DSN
 - Transport options:
   - Set `--transport=stdio` (default) for stdio transport
-  - Set `--transport=sse` for SSE transport with HTTP server
+  - Set `--transport=http` for streamable HTTP transport with HTTP server
 
 ## Database Connectors
 

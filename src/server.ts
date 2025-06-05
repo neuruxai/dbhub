@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import express from "express";
 import path from "path";
@@ -130,34 +130,67 @@ See documentation for more details on configuring database connections.
     console.error(generateBanner(SERVER_VERSION, activeModes));
 
     // Set up transport based on type
-    if (transportData.type === "sse") {
-      // Set up Express server for SSE transport
+    if (transportData.type === "http") {
+      // Set up Express server for Streamable HTTP transport
       const app = express();
-      let transport: SSEServerTransport;
 
-      app.get("/sse", async (req, res) => {
-        transport = new SSEServerTransport("/message", res);
-        console.error("Client connected", transport?.["_sessionId"]);
-        await server.connect(transport);
+      // Enable JSON parsing
+      app.use(express.json());
 
-        // Listen for connection close
-        res.on("close", () => {
-          console.error("Client Disconnected", transport?.["_sessionId"]);
-        });
+      // Handle CORS and security headers
+      app.use((req, res, next) => {
+        // Validate Origin header to prevent DNS rebinding attacks
+        const origin = req.headers.origin;
+        if (origin && !origin.startsWith('http://localhost') && !origin.startsWith('https://localhost')) {
+          return res.status(403).json({ error: 'Forbidden origin' });
+        }
+        
+        res.header('Access-Control-Allow-Origin', origin || 'http://localhost');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Mcp-Session-Id');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        
+        if (req.method === 'OPTIONS') {
+          return res.sendStatus(200);
+        }
+        next();
       });
 
-      app.post("/message", async (req, res) => {
-        console.error("Client Message", transport?.["_sessionId"]);
-        await transport.handlePostMessage(req, res, req.body);
+      // Create a single transport instance that manages multiple sessions
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => `session_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        onsessioninitialized: (sessionId: string) => {
+          console.error(`Session initialized: ${sessionId}`);
+        },
+        enableJsonResponse: false // Use SSE streaming
       });
 
-      // Start the HTTP server (port is only relevant for SSE transport)
+      // Connect the server to the transport once
+      await server.connect(transport);
+
+      // Main endpoint for streamable HTTP transport
+      app.all("/message", async (req, res) => {
+        try {
+          // Handle the request (works for GET, POST, DELETE)
+          // Pass the parsed body for POST requests
+          const parsedBody = req.method === 'POST' ? req.body : undefined;
+          await transport.handleRequest(req, res, parsedBody);
+        } catch (error) {
+          console.error("Error handling request:", error);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'Internal server error' });
+          }
+        }
+      });
+
+
+      // Start the HTTP server
       const portData = resolvePort();
       const port = portData.port;
       console.error(`Port source: ${portData.source}`);
-      app.listen(port, () => {
+      app.listen(port, 'localhost', () => {
         console.error(`DBHub server listening at http://localhost:${port}`);
-        console.error(`Connect to MCP server at http://localhost:${port}/sse`);
+        console.error(`Connect to MCP server at http://localhost:${port}/message`);
       });
     } else {
       // Set up STDIO transport
