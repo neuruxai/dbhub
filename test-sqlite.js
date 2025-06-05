@@ -61,7 +61,7 @@ db.serialize(() => {
 
       console.log('\nTest completed successfully!');
       console.log('Now you can test DBHub with:');
-      console.log('1. Create a .env file with: DSN=sqlite::memory:');
+      console.log('1. Create a .env file with: DSN=sqlite:///:memory:');
       console.log('2. Run: pnpm run dev');
     });
   });

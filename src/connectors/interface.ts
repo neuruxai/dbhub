@@ -46,7 +46,7 @@ export interface DSNParser {
    * - PostgreSQL: "postgres://user:password@localhost:5432/dbname?sslmode=disable"
    * - MariaDB: "mariadb://user:password@localhost:3306/dbname"
    * - MySQL: "mysql://user:password@localhost:3306/dbname"
-   * - SQLite: "sqlite:///path/to/database.db" or "sqlite::memory:"
+   * - SQLite: "sqlite:///path/to/database.db" or "sqlite:///:memory:"
    */
   parse(dsn: string): Promise<any>;
 

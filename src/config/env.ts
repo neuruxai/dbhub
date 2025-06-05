@@ -113,7 +113,7 @@ export function resolveDSN(): { dsn: string; source: string; isDemo?: boolean } 
   if (isDemoMode()) {
     // Will use in-memory SQLite with demo data
     return {
-      dsn: "sqlite::memory:",
+      dsn: "sqlite:///:memory:",
       source: "demo mode",
       isDemo: true,
     };

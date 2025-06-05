@@ -23,7 +23,7 @@ import { SafeURL } from "../../utils/safe-url.js";
  * Handles DSN strings like:
  * - sqlite:///path/to/database.db (absolute path)
  * - sqlite://./relative/path/to/database.db (relative path)
- * - sqlite::memory: (in-memory database)
+ * - sqlite:///:memory: (in-memory database)
  */
 class SQLiteDSNParser implements DSNParser {
   async parse(dsn: string): Promise<{ dbPath: string }> {
@@ -38,7 +38,7 @@ class SQLiteDSNParser implements DSNParser {
       let dbPath: string;
 
       // Handle in-memory database
-      if (url.hostname === "" && url.pathname === ":memory:") {
+      if (url.hostname === "" && url.pathname === "/:memory:") {
         dbPath = ":memory:";
       }
       // Handle file paths

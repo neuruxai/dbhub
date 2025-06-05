@@ -50,7 +50,7 @@ export function loadSqlFile(fileName: string): string {
  * Get SQLite DSN for in-memory database
  */
 export function getInMemorySqliteDSN(): string {
-  return "sqlite::memory:";
+  return "sqlite:///:memory:";
 }
 
 /**
