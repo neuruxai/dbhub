@@ -395,7 +395,36 @@ export class PostgresConnector implements Connector {
 
     const client = await this.pool.connect();
     try {
-      return await client.query(sql);
+      // Check if this is a multi-statement query
+      const statements = sql.split(';')
+        .map(statement => statement.trim())
+        .filter(statement => statement.length > 0);
+
+      if (statements.length === 1) {
+        // Single statement
+        return await client.query(statements[0]);
+      } else {
+        // Multiple statements - execute all in same session for transaction consistency
+        let allRows: any[] = [];
+        
+        // Execute within a transaction to ensure session consistency
+        await client.query('BEGIN');
+        try {
+          for (const statement of statements) {
+            const result = await client.query(statement);
+            // Collect rows from SELECT/WITH/EXPLAIN statements
+            if (result.rows && result.rows.length > 0) {
+              allRows.push(...result.rows);
+            }
+          }
+          await client.query('COMMIT');
+        } catch (error) {
+          await client.query('ROLLBACK');
+          throw error;
+        }
+
+        return { rows: allRows };
+      }
     } finally {
       client.release();
     }

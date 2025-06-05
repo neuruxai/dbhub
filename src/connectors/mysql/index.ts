@@ -37,6 +37,7 @@ class MySQLDSNParser implements DSNParser {
         database: url.pathname ? url.pathname.substring(1) : '', // Remove leading '/' if exists
         user: url.username,
         password: url.password,
+        multipleStatements: true, // Enable native multi-statement support
       };
 
       // Handle query parameters
@@ -464,8 +465,25 @@ export class MySQLConnector implements Connector {
     }
 
     try {
-      const [rows, fields] = (await this.pool.query(sql)) as [any[], any];
-      return { rows, fields };
+      // Use native multi-statement support (enabled in connection config)
+      // MySQL2 with multipleStatements: true handles multiple statements automatically
+      const results = (await this.pool.query(sql)) as any;
+      
+      // Handle both single and multiple statement results
+      if (Array.isArray(results[0])) {
+        // Multiple statements result - flatten all rows
+        let allRows: any[] = [];
+        for (const result of results[0]) {
+          if (Array.isArray(result) && result.length > 0) {
+            allRows.push(...result);
+          }
+        }
+        return { rows: allRows };
+      } else {
+        // Single statement result
+        const [rows, fields] = results;
+        return { rows, fields };
+      }
     } catch (error) {
       console.error("Error executing query:", error);
       throw error;

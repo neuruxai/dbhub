@@ -49,10 +49,10 @@ https://demo.dbhub.ai/sse connects a [sample employee database](https://github.c
 
 ### Database Tools
 
-| Tool            | Command Name      | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
-| --------------- | ----------------- | :--------: | :---: | :-----: | :--------: | ------ | :----: |
-| Execute SQL     | `execute_sql`     |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
-| List Connectors | `list_connectors` |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
+| Tool            | Command Name      | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
+| --------------- | ----------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: | ------ | :----: |
+| Execute SQL     | `execute_sql`     | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
+| List Connectors | `list_connectors` | List all available database connectors                              |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
 
 ### Prompt Capabilities
 
@@ -99,7 +99,7 @@ docker run --rm --init \
 ```
 
 ```bash
-# Oracle example with thick mode for connecting to 11g or older 
+# Oracle example with thick mode for connecting to 11g or older
 docker run --rm --init \
    --name dbhub \
    --publish 8080:8080 \
@@ -179,14 +179,14 @@ npx @bytebase/dbhub --transport sse --port 8080 --demo
 
 You can specify the SSL mode using the `sslmode` parameter in your DSN string:
 
-| Database   | `sslmode=disable` | `sslmode=require` | Default SSL Behavior |
-|------------|:----------------:|:----------------:|:-------------------:|
-| PostgreSQL | ✅ | ✅ | Certificate verification |
-| MySQL      | ✅ | ✅ | Certificate verification |
-| MariaDB    | ✅ | ✅ | Certificate verification |
-| SQL Server | ✅ | ✅ | Certificate verification |
-| Oracle     | ✅ | ✅ | N/A (use Oracle client config) |
-| SQLite     | ❌ | ❌ | N/A (file-based)        |
+| Database   | `sslmode=disable` | `sslmode=require` |      Default SSL Behavior      |
+| ---------- | :---------------: | :---------------: | :----------------------------: |
+| PostgreSQL |        ✅         |        ✅         |    Certificate verification    |
+| MySQL      |        ✅         |        ✅         |    Certificate verification    |
+| MariaDB    |        ✅         |        ✅         |    Certificate verification    |
+| SQL Server |        ✅         |        ✅         |    Certificate verification    |
+| Oracle     |        ✅         |        ✅         | N/A (use Oracle client config) |
+| SQLite     |        ❌         |        ❌         |        N/A (file-based)        |
 
 **SSL Mode Options:**
 
@@ -196,6 +196,7 @@ You can specify the SSL mode using the `sslmode` parameter in your DSN string:
 Without specifying `sslmode`, most databases default to certificate verification, which provides the highest level of security.
 
 Example usage:
+
 ```bash
 # Disable SSL
 postgres://user:password@localhost:5432/dbname?sslmode=disable
@@ -255,14 +256,14 @@ For real databases, a Database Source Name (DSN) is required. You can provide th
 
 DBHub supports the following database connection string formats:
 
-| Database   | DSN Format                                                | Example                                                                                                     |
-| ---------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| MySQL      | `mysql://[user]:[password]@[host]:[port]/[database]`      | `mysql://user:password@localhost:3306/dbname?sslmode=disable`                                                               |
-| MariaDB    | `mariadb://[user]:[password]@[host]:[port]/[database]`    | `mariadb://user:password@localhost:3306/dbname?sslmode=disable`                                                             |
-| PostgreSQL | `postgres://[user]:[password]@[host]:[port]/[database]`   | `postgres://user:password@localhost:5432/dbname?sslmode=disable`                                            |
-| SQL Server | `sqlserver://[user]:[password]@[host]:[port]/[database]`  | `sqlserver://user:password@localhost:1433/dbname?sslmode=disable`                                           |
-| SQLite     | `sqlite:///[path/to/file]` or `sqlite:///:memory:`           | `sqlite:///path/to/database.db`, `sqlite:C:/Users/YourName/data/database.db (windows)` or `sqlite:///:memory:` |
-| Oracle     | `oracle://[user]:[password]@[host]:[port]/[service_name]` | `oracle://username:password@localhost:1521/service_name?sslmode=disable`                                     |
+| Database   | DSN Format                                                | Example                                                                                                        |
+| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| MySQL      | `mysql://[user]:[password]@[host]:[port]/[database]`      | `mysql://user:password@localhost:3306/dbname?sslmode=disable`                                                  |
+| MariaDB    | `mariadb://[user]:[password]@[host]:[port]/[database]`    | `mariadb://user:password@localhost:3306/dbname?sslmode=disable`                                                |
+| PostgreSQL | `postgres://[user]:[password]@[host]:[port]/[database]`   | `postgres://user:password@localhost:5432/dbname?sslmode=disable`                                               |
+| SQL Server | `sqlserver://[user]:[password]@[host]:[port]/[database]`  | `sqlserver://user:password@localhost:1433/dbname?sslmode=disable`                                              |
+| SQLite     | `sqlite:///[path/to/file]` or `sqlite:///:memory:`        | `sqlite:///path/to/database.db`, `sqlite:C:/Users/YourName/data/database.db (windows)` or `sqlite:///:memory:` |
+| Oracle     | `oracle://[user]:[password]@[host]:[port]/[service_name]` | `oracle://username:password@localhost:1521/service_name?sslmode=disable`                                       |
 
 #### Oracle
 
@@ -340,16 +341,17 @@ The demo mode uses an in-memory SQLite database loaded with the [sample employee
 
 ### Testing
 
-The project uses Vitest for testing:
+The project uses Vitest for comprehensive unit testing:
 
-- Run tests: `pnpm test`
-- Run tests in watch mode: `pnpm test:watch`
+- **Run all tests**: `pnpm test`
+- **Run tests in watch mode**: `pnpm test:watch`
 
 #### Pre-commit Hooks (for Developers)
 
 The project includes pre-commit hooks to run tests automatically before each commit:
 
 1. After cloning the repository, set up the pre-commit hooks:
+
    ```bash
    ./scripts/setup-husky.sh
    ```

@@ -320,8 +320,49 @@ export class SQLiteConnector implements Connector {
     }
 
     try {
-      const rows = this.db.prepare(sql).all();
-      return { rows };
+      // Check if this is a multi-statement query
+      const statements = sql.split(';')
+        .map(statement => statement.trim())
+        .filter(statement => statement.length > 0);
+
+      if (statements.length === 1) {
+        // Single statement - use prepare for optimal performance and result retrieval
+        const rows = this.db.prepare(statements[0]).all();
+        return { rows };
+      } else {
+        // Multiple statements - use native .exec() for optimal performance
+        // Note: .exec() doesn't return results, so we need to handle SELECT statements differently
+        const readStatements = [];
+        const writeStatements = [];
+        
+        // Separate read and write operations
+        for (const statement of statements) {
+          const trimmedStatement = statement.toLowerCase().trim();
+          if (trimmedStatement.startsWith('select') || 
+              trimmedStatement.startsWith('with') || 
+              trimmedStatement.startsWith('explain') ||
+              trimmedStatement.startsWith('analyze') ||
+              trimmedStatement.startsWith('pragma')) {
+            readStatements.push(statement);
+          } else {
+            writeStatements.push(statement);
+          }
+        }
+
+        // Execute write statements using native .exec() for optimal performance
+        if (writeStatements.length > 0) {
+          this.db.exec(writeStatements.join('; '));
+        }
+
+        // Execute read statements individually to collect results
+        let allRows: any[] = [];
+        for (const statement of readStatements) {
+          const result = this.db.prepare(statement).all();
+          allRows.push(...result);
+        }
+
+        return { rows: allRows };
+      }
     } catch (error) {
       throw error;
     }

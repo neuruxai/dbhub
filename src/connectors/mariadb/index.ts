@@ -37,6 +37,7 @@ class MariadbDSNParser implements DSNParser {
         database: url.pathname ? url.pathname.substring(1) : '', // Remove leading '/' if exists
         user: url.username,
         password: url.password,
+        multipleStatements: true, // Enable native multi-statement support
       };
 
       // Handle query parameters
@@ -466,8 +467,31 @@ export class MariaDBConnector implements Connector {
     }
 
     try {
-      const [rows, fields] = (await this.pool.query(sql)) as [any[], any];
-      return { rows, fields };
+      // Use native multi-statement support (enabled in connection config)
+      // MariaDB with multipleStatements: true handles multiple statements automatically
+      const results = (await this.pool.query(sql)) as any;
+      
+      // Handle both single and multiple statement results
+      if (Array.isArray(results)) {
+        // Check if this is a multi-statement result (array of result sets)
+        if (results.length > 1 || (results[0] && Array.isArray(results[0]))) {
+          // Multiple statements result - flatten all rows
+          let allRows: any[] = [];
+          for (const result of results) {
+            if (Array.isArray(result) && result.length > 0) {
+              allRows.push(...result);
+            }
+          }
+          return { rows: allRows };
+        } else {
+          // Single statement result
+          const [rows, fields] = results;
+          return { rows, fields };
+        }
+      } else {
+        // Single statement result (non-array format)
+        return { rows: results };
+      }
     } catch (error) {
       console.error("Error executing query:", error);
       throw error;
