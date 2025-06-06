@@ -315,13 +315,13 @@ Extra query parameters:
 
 ### Command line options
 
-| Option    | Description                                                     | Default                      |
-| --------- | --------------------------------------------------------------- | ---------------------------- |
-| demo      | Run in demo mode with sample employee database                  | `false`                      |
-| dsn       | Database connection string                                      | Required if not in demo mode |
-| transport | Transport mode: `stdio` or `http`                               | `stdio`                      |
-| port      | HTTP server port (only applicable when using `--transport=http`) | `8080`                       |
-| readonly  | Restrict SQL execution to read-only operations                  | `false`                      |
+| Option    | Environment Variable | Description                                                     | Default                      |
+| --------- | -------------------- | --------------------------------------------------------------- | ---------------------------- |
+| dsn       | `DSN`                | Database connection string                                      | Required if not in demo mode |
+| transport | `TRANSPORT`          | Transport mode: `stdio` or `http`                               | `stdio`                      |
+| port      | `PORT`               | HTTP server port (only applicable when using `--transport=http`) | `8080`                       |
+| readonly  | `READONLY`           | Restrict SQL execution to read-only operations                  | `false`                      |
+| demo      | N/A                  | Run in demo mode with sample employee database                  | `false`                      |
 
 The demo mode uses an in-memory SQLite database loaded with the [sample employee database](https://github.com/bytebase/dbhub/tree/main/resources/employee-sqlite) that includes tables for employees, departments, titles, salaries, department employees, and department managers. The sample database includes SQL scripts for table creation, data loading, and testing.
 
