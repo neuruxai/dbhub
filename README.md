@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://cursor.com/install-mcp?name=dbhub-postgres&config=eyJjb21tYW5kIjoibnB4IC15IEBieXRlYmFzZS9kYmh1YiAtLXRyYW5zcG9ydCBzdGRpbyAtLWRzbiBwb3N0Z3JlczovL3VzZXI6cGFzc3dvcmRAbG9jYWxob3N0OjU0MzIvZGJuYW1lP3NzbG1vZGU9ZGlzYWJsZSJ9"><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add dbhub-postgres MCP server to Cursor" height="32" /></a>
+  <a href="https://cursor.com/install-mcp?name=dbhub&config=eyJjb21tYW5kIjoibnB4IEBieXRlYmFzZS9kYmh1YiIsImVudiI6eyJUUkFOU1BPUlQiOiJzdGRpbyIsIkRTTiI6InBvc3RncmVzOi8vdXNlcjpwYXNzd29yZEBsb2NhbGhvc3Q6NTQzMi9kYm5hbWU%2Fc3NsbW9kZT1kaXNhYmxlIiwiUkVBRE9OTFkiOiJ0cnVlIn19"><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add dbhub MCP server to Cursor" height="32" /></a>
 </p>
 
 DBHub is a universal database gateway implementing the Model Context Protocol (MCP) server interface. This gateway allows MCP-compatible clients to connect to and explore different databases.
@@ -172,7 +172,7 @@ npx @bytebase/dbhub --transport http --port 8080 --demo
 
 ### Cursor
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=dbhub-postgres&config=eyJjb21tYW5kIjoibnB4IC15IEBieXRlYmFzZS9kYmh1YiAtLXRyYW5zcG9ydCBzdGRpbyAtLWRzbiBwb3N0Z3JlczovL3VzZXI6cGFzc3dvcmRAbG9jYWxob3N0OjU0MzIvZGJuYW1lP3NzbG1vZGU9ZGlzYWJsZSJ9)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=dbhub&config=eyJjb21tYW5kIjoibnB4IEBieXRlYmFzZS9kYmh1YiIsImVudiI6eyJUUkFOU1BPUlQiOiJzdGRpbyIsIkRTTiI6InBvc3RncmVzOi8vdXNlcjpwYXNzd29yZEBsb2NhbGhvc3Q6NTQzMi9kYm5hbWU%2Fc3NsbW9kZT1kaXNhYmxlIiwiUkVBRE9OTFkiOiJ0cnVlIn19)
 
 ![cursor](https://raw.githubusercontent.com/bytebase/dbhub/main/resources/images/cursor.webp)
 
