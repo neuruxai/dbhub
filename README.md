@@ -235,6 +235,9 @@ You can use DBHub in demo mode with a sample employee database for testing:
 npx @bytebase/dbhub  --demo
 ```
 
+> [!WARNING]
+If your user/password contains special characters, you need to escape them first. (e.g. `pass#word` should be escaped as `pass%23word`)
+
 For real databases, a Database Source Name (DSN) is required. You can provide this in several ways:
 
 - **Command line argument** (highest priority):
