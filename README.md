@@ -56,7 +56,6 @@ https://demo.dbhub.ai/message connects a [sample employee database](https://gith
 | Tool            | Command Name      | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
 | --------------- | ----------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: | ------ | :----: |
 | Execute SQL     | `execute_sql`     | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
-| List Connectors | `list_connectors` | List all available database connectors                              |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
 
 ### Prompt Capabilities
 

@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSqlToolHandler, executeSqlSchema } from "./execute-sql.js";
-import { listConnectorsToolHandler } from "./list-connectors.js";
 /**
  * Register all tool handlers with the MCP server
  */
@@ -13,11 +12,4 @@ export function registerTools(server: McpServer): void {
     executeSqlToolHandler
   );
 
-  // Tool to list available database connectors
-  server.tool(
-    "list_connectors",
-    "List all available database connectors",
-    {},
-    listConnectorsToolHandler
-  );
 }
