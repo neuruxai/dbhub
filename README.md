@@ -344,6 +344,8 @@ pnpm test src/connectors/__tests__/mariadb.integration.test.ts
 pnpm test src/connectors/__tests__/sqlserver.integration.test.ts
 # Run only SQLite integration tests
 pnpm test src/connectors/__tests__/sqlite.integration.test.ts
+# Run JSON RPC integration tests
+pnpm test src/__tests__/json-rpc-integration.test.ts
 ```
 
 All integration tests follow these patterns:
