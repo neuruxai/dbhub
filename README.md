@@ -30,8 +30,6 @@ DBHub is a universal database gateway implementing the Model Context Protocol (M
  |                  |    |              |    |                  |
  |                  |    |              +--->+    MariaDB       |
  |                  |    |              |    |                  |
- |                  |    |              +--->+    Oracle        |
- |                  |    |              |    |                  |
  +------------------+    +--------------+    +------------------+
       MCP Clients           MCP Server             Databases
 ```
@@ -46,27 +44,27 @@ https://demo.dbhub.ai/message connects a [sample employee database](https://gith
 
 ### Database Resources
 
-| Resource Name               | URI Format                                             | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
-| --------------------------- | ------------------------------------------------------ | :--------: | :---: | :-----: | :--------: | :----: | :----: |
-| schemas                     | `db://schemas`                                         |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |   ✅   |
-| tables_in_schema            | `db://schemas/{schemaName}/tables`                     |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |   ✅   |
-| table_structure_in_schema   | `db://schemas/{schemaName}/tables/{tableName}`         |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |   ✅   |
-| indexes_in_table            | `db://schemas/{schemaName}/tables/{tableName}/indexes` |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |   ✅   |
-| procedures_in_schema        | `db://schemas/{schemaName}/procedures`                 |     ✅     |  ✅   |   ✅    |     ✅     |   ❌   |   ✅   |
-| procedure_details_in_schema | `db://schemas/{schemaName}/procedures/{procedureName}` |     ✅     |  ✅   |   ✅    |     ✅     |   ❌   |   ✅   |
+| Resource Name               | URI Format                                             | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite |
+| --------------------------- | ------------------------------------------------------ | :--------: | :---: | :-----: | :--------: | :----: |
+| schemas                     | `db://schemas`                                         |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
+| tables_in_schema            | `db://schemas/{schemaName}/tables`                     |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
+| table_structure_in_schema   | `db://schemas/{schemaName}/tables/{tableName}`         |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
+| indexes_in_table            | `db://schemas/{schemaName}/tables/{tableName}/indexes` |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
+| procedures_in_schema        | `db://schemas/{schemaName}/procedures`                 |     ✅     |  ✅   |   ✅    |     ✅     |   ❌   |
+| procedure_details_in_schema | `db://schemas/{schemaName}/procedures/{procedureName}` |     ✅     |  ✅   |   ✅    |     ✅     |   ❌   |
 
 ### Database Tools
 
-| Tool        | Command Name  | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
-| ----------- | ------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: | ------ | :----: |
-| Execute SQL | `execute_sql` | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
+| Tool        | Command Name  | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite |
+| ----------- | ------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: | ------ |
+| Execute SQL | `execute_sql` | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |
 
 ### Prompt Capabilities
 
-| Prompt              | Command Name   | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
-| ------------------- | -------------- | :--------: | :---: | :-----: | :--------: | ------ | :----: |
-| Generate SQL        | `generate_sql` |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
-| Explain DB Elements | `explain_db`   |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
+| Prompt              | Command Name   | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite |
+| ------------------- | -------------- | :--------: | :---: | :-----: | :--------: | ------ |
+| Generate SQL        | `generate_sql` |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |
+| Explain DB Elements | `explain_db`   |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |
 
 ## Installation
 
@@ -94,27 +92,6 @@ docker run --rm --init \
    --demo
 ```
 
-```bash
-# Oracle example
-docker run --rm --init \
-   --name dbhub \
-   --publish 8080:8080 \
-   bytebase/dbhub \
-   --transport http \
-   --port 8080 \
-   --dsn "oracle://username:password@localhost:1521/service_name"
-```
-
-```bash
-# Oracle example with thick mode for connecting to 11g or older
-docker run --rm --init \
-   --name dbhub \
-   --publish 8080:8080 \
-   bytebase/dbhub-oracle-thick \
-   --transport http \
-   --port 8080 \
-   --dsn "oracle://username:password@localhost:1521/service_name"
-```
 
 ### NPM
 
@@ -194,7 +171,6 @@ You can specify the SSL mode using the `sslmode` parameter in your DSN string:
 | MySQL      |        ✅         |        ✅         |    Certificate verification    |
 | MariaDB    |        ✅         |        ✅         |    Certificate verification    |
 | SQL Server |        ✅         |        ✅         |    Certificate verification    |
-| Oracle     |        ✅         |        ✅         | N/A (use Oracle client config) |
 | SQLite     |        ❌         |        ❌         |        N/A (file-based)        |
 
 **SSL Mode Options:**
@@ -275,28 +251,7 @@ DBHub supports the following database connection string formats:
 | PostgreSQL | `postgres://[user]:[password]@[host]:[port]/[database]`   | `postgres://user:password@localhost:5432/dbname?sslmode=disable`                                               |
 | SQL Server | `sqlserver://[user]:[password]@[host]:[port]/[database]`  | `sqlserver://user:password@localhost:1433/dbname?sslmode=disable`                                              |
 | SQLite     | `sqlite:///[path/to/file]` or `sqlite:///:memory:`        | `sqlite:///path/to/database.db`, `sqlite:C:/Users/YourName/data/database.db (windows)` or `sqlite:///:memory:` |
-| Oracle     | `oracle://[user]:[password]@[host]:[port]/[service_name]` | `oracle://username:password@localhost:1521/service_name?sslmode=disable`                                       |
 
-#### Oracle
-
-If you see the error "NJS-138: connections to this database server version are not supported by node-oracledb in Thin mode", you need to use Thick mode as described below.
-
-##### Docker
-
-Use `bytebase/dbhub-oracle-thick` instead of `bytebase/dbhub` docker image.
-
-##### npx
-
-1. Download and install [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/downloads.html) for your platform
-1. Set the `ORACLE_LIB_DIR` environment variable to the path of your Oracle Instant Client:
-
-```bash
-# Set environment variable to Oracle Instant Client directory
-export ORACLE_LIB_DIR=/path/to/instantclient_19_8
-
-# Then run DBHub
-npx @bytebase/dbhub --dsn "oracle://username:password@localhost:1521/service_name"
-```
 
 #### SQL Server
 
@@ -374,21 +329,21 @@ DBHub includes comprehensive integration tests for all supported database connec
 **Note**: This command runs all integration tests in parallel, which may take 5-15 minutes depending on your system resources and network speed.
 
 ```bash
-# Run all database integration tests (PostgreSQL, MySQL, MariaDB, SQL Server)
+# Run all database integration tests
 pnpm test:integration
 ```
 
 ```bash
 # Run only PostgreSQL integration tests
-pnpm test:integration -- --testNamePattern="PostgreSQL"
+pnpm test src/connectors/__tests__/postgres.integration.test.ts
 # Run only MySQL integration tests
-pnpm test:integration -- --testNamePattern="MySQL"
+pnpm test src/connectors/__tests__/mysql.integration.test.ts
 # Run only MariaDB integration tests
-pnpm test:integration -- --testNamePattern="MariaDB"
+pnpm test src/connectors/__tests__/mariadb.integration.test.ts
 # Run only SQL Server integration tests
-pnpm test:integration -- --testNamePattern="SQL Server"
+pnpm test src/connectors/__tests__/sqlserver.integration.test.ts
 # Run only SQLite integration tests
-pnpm test:integration -- --testNamePattern="SQLite"
+pnpm test src/connectors/__tests__/sqlite.integration.test.ts
 ```
 
 All integration tests follow these patterns:
@@ -421,6 +376,7 @@ docker pull mcr.microsoft.com/mssql/server:2019-latest
 - SQL Server containers require significant startup time (3-5 minutes)
 - Ensure Docker has sufficient memory allocated (4GB+ recommended)
 - Consider running SQL Server tests separately if experiencing timeouts
+
 
 **Network/Resource Issues:**
 

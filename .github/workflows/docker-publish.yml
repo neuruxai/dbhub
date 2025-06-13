@@ -4,7 +4,6 @@
 # 1. Always pushes to the 'latest' tag when changes are pushed to the main branch
 # 2. If package.json version changes, also pushes a version-specific tag
 # 3. Builds for both amd64 and arm64 architectures
-# 4. Builds Oracle thick mode image for Oracle 11g compatibility
 
 name: Publish to docker hub
 
@@ -14,7 +13,6 @@ on:
 
 env:
   IMAGE_NAME: bytebase/dbhub
-  ORACLE_THICK_IMAGE_NAME: bytebase/dbhub-oracle-thick
 
 jobs:
   build-and-push:
@@ -86,30 +84,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           
-      - name: Prepare Oracle Thick mode Docker tags
-        id: prep-oracle
-        run: |
-          # Always include latest tag
-          ORACLE_TAGS="${{ env.ORACLE_THICK_IMAGE_NAME }}:latest"
-          
-          # Add version tag if version changed
-          if [[ "${{ steps.check-version.outputs.VERSION_CHANGED }}" == "true" ]]; then
-            VERSION="${{ steps.check-version.outputs.VERSION }}"
-            ORACLE_TAGS="$ORACLE_TAGS,${{ env.ORACLE_THICK_IMAGE_NAME }}:$VERSION"
-            echo "Publishing Oracle image with tags: latest, $VERSION"
-          else
-            echo "Publishing Oracle image with tag: latest only"
-          fi
-          
-          echo "ORACLE_TAGS=$ORACLE_TAGS" >> $GITHUB_OUTPUT
-          
-      - name: Build and push Oracle thick client Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.oracle-thick
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.prep-oracle.outputs.ORACLE_TAGS }}
-          cache-from: type=gha,scope=oracle-build
-          cache-to: type=gha,scope=oracle-build,mode=max
