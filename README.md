@@ -54,9 +54,9 @@ https://demo.dbhub.ai/message connects a [sample employee database](https://gith
 
 ### Database Tools
 
-| Tool            | Command Name      | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
-| --------------- | ----------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: | ------ | :----: |
-| Execute SQL     | `execute_sql`     | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
+| Tool        | Command Name  | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite | Oracle |
+| ----------- | ------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: | ------ | :----: |
+| Execute SQL | `execute_sql` | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |   ✅   |
 
 ### Prompt Capabilities
 
@@ -236,7 +236,7 @@ npx @bytebase/dbhub  --demo
 ```
 
 > [!WARNING]
-If your user/password contains special characters, you need to escape them first. (e.g. `pass#word` should be escaped as `pass%23word`)
+> If your user/password contains special characters, you need to escape them first. (e.g. `pass#word` should be escaped as `pass%23word`)
 
 For real databases, a Database Source Name (DSN) is required. You can provide this in several ways:
 
@@ -318,13 +318,13 @@ Extra query parameters:
 
 ### Command line options
 
-| Option    | Environment Variable | Description                                                     | Default                      |
-| --------- | -------------------- | --------------------------------------------------------------- | ---------------------------- |
-| dsn       | `DSN`                | Database connection string                                      | Required if not in demo mode |
-| transport | `TRANSPORT`          | Transport mode: `stdio` or `http`                               | `stdio`                      |
+| Option    | Environment Variable | Description                                                      | Default                      |
+| --------- | -------------------- | ---------------------------------------------------------------- | ---------------------------- |
+| dsn       | `DSN`                | Database connection string                                       | Required if not in demo mode |
+| transport | `TRANSPORT`          | Transport mode: `stdio` or `http`                                | `stdio`                      |
 | port      | `PORT`               | HTTP server port (only applicable when using `--transport=http`) | `8080`                       |
-| readonly  | `READONLY`           | Restrict SQL execution to read-only operations                  | `false`                      |
-| demo      | N/A                  | Run in demo mode with sample employee database                  | `false`                      |
+| readonly  | `READONLY`           | Restrict SQL execution to read-only operations                   | `false`                      |
+| demo      | N/A                  | Run in demo mode with sample employee database                   | `false`                      |
 
 The demo mode uses an in-memory SQLite database loaded with the [sample employee database](https://github.com/bytebase/dbhub/tree/main/resources/employee-sqlite) that includes tables for employees, departments, titles, salaries, department employees, and department managers. The sample database includes SQL scripts for table creation, data loading, and testing.
 
@@ -350,10 +350,85 @@ The demo mode uses an in-memory SQLite database loaded with the [sample employee
 
 ### Testing
 
-The project uses Vitest for comprehensive unit testing:
+The project uses Vitest for comprehensive unit and integration testing:
 
 - **Run all tests**: `pnpm test`
 - **Run tests in watch mode**: `pnpm test:watch`
+- **Run integration tests**: `pnpm test:integration`
+
+#### Integration Tests
+
+DBHub includes comprehensive integration tests for all supported database connectors using [Testcontainers](https://testcontainers.com/). These tests run against real database instances in Docker containers, ensuring full compatibility and feature coverage.
+
+##### Prerequisites
+
+- **Docker**: Ensure Docker is installed and running on your machine
+- **Docker Resources**: Allocate sufficient memory (recommended: 4GB+) for multiple database containers
+- **Network Access**: Ability to pull Docker images from registries
+
+##### Running Integration Tests
+
+**Note**: This command runs all integration tests in parallel, which may take 5-15 minutes depending on your system resources and network speed.
+
+```bash
+# Run all database integration tests (PostgreSQL, MySQL, MariaDB, SQL Server)
+pnpm test:integration
+```
+
+```bash
+# Run only PostgreSQL integration tests
+pnpm test:integration -- --testNamePattern="PostgreSQL"
+# Run only MySQL integration tests
+pnpm test:integration -- --testNamePattern="MySQL"
+# Run only MariaDB integration tests
+pnpm test:integration -- --testNamePattern="MariaDB"
+# Run only SQL Server integration tests
+pnpm test:integration -- --testNamePattern="SQL Server"
+```
+
+All integration tests follow these patterns:
+
+1. **Container Lifecycle**: Start database container → Connect → Setup test data → Run tests → Cleanup
+2. **Shared Test Utilities**: Common test patterns implemented in `IntegrationTestBase` class
+3. **Database-Specific Features**: Each database includes tests for unique features and capabilities
+4. **Error Handling**: Comprehensive testing of connection errors, invalid SQL, and edge cases
+
+##### Troubleshooting Integration Tests
+
+**Container Startup Issues:**
+
+```bash
+# Check Docker is running
+docker ps
+
+# Check available memory
+docker system df
+
+# Pull images manually if needed
+docker pull postgres:15-alpine
+docker pull mysql:8.0
+docker pull mariadb:10.11
+docker pull mcr.microsoft.com/mssql/server:2019-latest
+```
+
+**SQL Server Timeout Issues:**
+
+- SQL Server containers require significant startup time (3-5 minutes)
+- Ensure Docker has sufficient memory allocated (4GB+ recommended)
+- Consider running SQL Server tests separately if experiencing timeouts
+
+**Network/Resource Issues:**
+
+```bash
+# Run tests with verbose output
+pnpm test:integration --reporter=verbose
+
+# Run single database test to isolate issues
+pnpm test:integration -- --testNamePattern="PostgreSQL"
+
+# Check Docker container logs if tests fail
+docker logs <container_id>
+```
 
 #### Pre-commit Hooks (for Developers)
 
