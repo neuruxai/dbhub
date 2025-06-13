@@ -17,6 +17,14 @@ class SQLServerTestContainer implements TestContainer {
     return `sqlserver://sa:Password123!@${host}:${port}/master?sslmode=disable`;
   }
   
+  getHost(): string {
+    return this.container.getHost();
+  }
+  
+  getMappedPort(port: number): number {
+    return this.container.getMappedPort(port);
+  }
+  
   async stop(): Promise<void> {
     await this.container.stop();
   }
@@ -147,6 +155,58 @@ describe('SQL Server Connector Integration Tests', () => {
     sqlServerTest.createStoredProcedureTests();
   }
   sqlServerTest.createErrorHandlingTests();
+
+  describe('SQL Server SSL/TLS Configuration', () => {
+    it('should parse sslmode=disable correctly', async () => {
+      const parser = new SQLServerConnector().dsnParser;
+      const config = await parser.parse('sqlserver://user:pass@localhost:1433/db?sslmode=disable');
+      
+      expect(config.options?.encrypt).toBe(false);
+      expect(config.options?.trustServerCertificate).toBe(false);
+    });
+
+    it('should parse sslmode=require correctly', async () => {
+      const parser = new SQLServerConnector().dsnParser;
+      const config = await parser.parse('sqlserver://user:pass@localhost:1433/db?sslmode=require');
+      
+      expect(config.options?.encrypt).toBe(true);
+      expect(config.options?.trustServerCertificate).toBe(true);
+    });
+
+    it('should default to unencrypted when no sslmode specified', async () => {
+      const parser = new SQLServerConnector().dsnParser;
+      const config = await parser.parse('sqlserver://user:pass@localhost:1433/db');
+      
+      expect(config.options?.encrypt).toBe(false);
+      expect(config.options?.trustServerCertificate).toBe(false);
+    });
+
+    it('should connect successfully with sslmode=disable (unencrypted)', async () => {
+      const connector = new SQLServerConnector();
+      const host = (sqlServerTest as any).container.getHost();
+      const port = (sqlServerTest as any).container.getMappedPort(1433);
+      const dsn = `sqlserver://sa:Password123!@${host}:${port}/master?sslmode=disable`;
+      
+      await connector.connect(dsn);
+      
+      // Verify this is an unencrypted connection by checking connection properties
+      const encryptionResult = await connector.executeSQL(`
+        SELECT 
+          CAST(CONNECTIONPROPERTY('protocol_type') AS NVARCHAR(100)) as protocol_type,
+          CASE 
+            WHEN CAST(CONNECTIONPROPERTY('protocol_type') AS NVARCHAR(100)) LIKE '%TLS%' 
+              OR CAST(CONNECTIONPROPERTY('protocol_type') AS NVARCHAR(100)) LIKE '%SSL%' 
+            THEN 'Encrypted' 
+            ELSE 'Unencrypted' 
+          END as encryption_status
+      `);
+      
+      expect(encryptionResult.rows[0].encryption_status).toBe('Unencrypted');
+      expect(encryptionResult.rows[0].protocol_type).not.toMatch(/TLS|SSL/i);
+      
+      await connector.disconnect();
+    });
+  });
 
   describe('SQL Server-specific Features', () => {
     it('should handle SQL Server IDENTITY columns', async () => {

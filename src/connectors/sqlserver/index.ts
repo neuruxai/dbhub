@@ -52,6 +52,7 @@ export class SQLServerDSNParser implements DSNParser {
       if (options.sslmode) {
         if (options.sslmode === "disable") {
           options.encrypt = false;
+          options.trustServerCertificate = false;
         } else if (options.sslmode === "require") {
           options.encrypt = true;
           options.trustServerCertificate = true;
@@ -67,8 +68,8 @@ export class SQLServerDSNParser implements DSNParser {
         port: url.port ? parseInt(url.port) : 1433, // Default SQL Server port
         database: url.pathname ? url.pathname.substring(1) : '', // Remove leading slash
         options: {
-          encrypt: options.encrypt ?? true, // Default to encrypted connection
-          trustServerCertificate: options.trustServerCertificate === true,
+          encrypt: options.encrypt ?? false, // Default to unencrypted for development
+          trustServerCertificate: options.trustServerCertificate ?? false,
           connectTimeout: options.connectTimeout ?? 15000,
           requestTimeout: options.requestTimeout ?? 15000,
         },
@@ -105,7 +106,7 @@ export class SQLServerDSNParser implements DSNParser {
   }
 
   getSampleDSN(): string {
-    return "sqlserver://username:password@localhost:1433/database?sslmode=require";
+    return "sqlserver://username:password@localhost:1433/database?sslmode=disable";
   }
 
   isValidDSN(dsn: string): boolean {
