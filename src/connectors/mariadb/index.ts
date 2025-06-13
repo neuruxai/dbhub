@@ -43,6 +43,7 @@ class MariadbDSNParser implements DSNParser {
         user: url.username,
         password: url.password,
         multipleStatements: true, // Enable native multi-statement support
+        connectTimeout: 5000, // 5 second timeout for connections
       };
 
       // Handle query parameters
@@ -98,7 +99,7 @@ export class MariaDBConnector implements Connector {
 
       // Test the connection
       console.error("Testing connection to MariaDB...");
-      const [rows] = await this.pool.query("SELECT 1");
+      await this.pool.query("SELECT 1");
       console.error("Successfully connected to MariaDB database");
     } catch (err) {
       console.error("Failed to connect to MariaDB database:", err);
