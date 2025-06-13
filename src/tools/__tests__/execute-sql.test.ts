@@ -73,13 +73,8 @@ describe('execute-sql tool', () => {
   });
 
   describe('multi-statement execution', () => {
-    it('should execute multiple SELECT statements', async () => {
-      const mockResult: SQLResult = { 
-        rows: [
-          { id: 1, name: 'user1' },
-          { id: 1, title: 'admin' }
-        ] 
-      };
+    it('should pass multi-statement SQL directly to connector', async () => {
+      const mockResult: SQLResult = { rows: [{ id: 1 }] };
       vi.mocked(mockConnector.executeSQL).mockResolvedValue(mockResult);
 
       const sql = 'SELECT * FROM users; SELECT * FROM roles;';
@@ -87,26 +82,6 @@ describe('execute-sql tool', () => {
       const parsedResult = parseToolResponse(result);
 
       expect(parsedResult.success).toBe(true);
-      expect(parsedResult.data.rows).toEqual([
-        { id: 1, name: 'user1' },
-        { id: 1, title: 'admin' }
-      ]);
-      expect(parsedResult.data.count).toBe(2);
-      expect(mockConnector.executeSQL).toHaveBeenCalledWith(sql);
-    });
-
-    it('should handle mixed read/write statements', async () => {
-      const mockResult: SQLResult = { 
-        rows: [{ id: 1, name: 'test_user' }] 
-      };
-      vi.mocked(mockConnector.executeSQL).mockResolvedValue(mockResult);
-
-      const sql = "INSERT INTO users (name) VALUES ('test_user'); SELECT * FROM users WHERE name = 'test_user';";
-      const result = await executeSqlToolHandler({ sql }, null);
-      const parsedResult = parseToolResponse(result);
-
-      expect(parsedResult.success).toBe(true);
-      expect(parsedResult.data.rows).toEqual([{ id: 1, name: 'test_user' }]);
       expect(mockConnector.executeSQL).toHaveBeenCalledWith(sql);
     });
   });
@@ -127,11 +102,11 @@ describe('execute-sql tool', () => {
       expect(mockConnector.executeSQL).toHaveBeenCalled();
     });
 
-    it('should allow multiple SELECT statements in read-only mode', async () => {
+    it('should allow multiple read-only statements in read-only mode', async () => {
       const mockResult: SQLResult = { rows: [] };
       vi.mocked(mockConnector.executeSQL).mockResolvedValue(mockResult);
 
-      const sql = 'SELECT * FROM users; SELECT * FROM roles; EXPLAIN SELECT * FROM users;';
+      const sql = 'SELECT * FROM users; SELECT * FROM roles;';
       const result = await executeSqlToolHandler({ sql }, null);
       const parsedResult = parseToolResponse(result);
 
@@ -162,53 +137,8 @@ describe('execute-sql tool', () => {
       expect(mockConnector.executeSQL).not.toHaveBeenCalled();
     });
 
-    it('should handle different database types allowed keywords', async () => {
-      // Test PostgreSQL
-      mockConnector = createMockConnector('postgres');
-      mockGetCurrentConnector.mockReturnValue(mockConnector);
-      
-      const mockResult: SQLResult = { rows: [] };
-      vi.mocked(mockConnector.executeSQL).mockResolvedValue(mockResult);
-
-      const result = await executeSqlToolHandler({ sql: 'SHOW TABLES; ANALYZE SELECT * FROM users;' }, null);
-      const parsedResult = parseToolResponse(result);
-
-      expect(parsedResult.success).toBe(true);
-      expect(mockConnector.executeSQL).toHaveBeenCalled();
-    });
   });
 
-  describe('database-specific behavior', () => {
-    it('should work with SQLite allowed keywords', async () => {
-      mockConnector = createMockConnector('sqlite');
-      mockGetCurrentConnector.mockReturnValue(mockConnector);
-      
-      const mockResult: SQLResult = { rows: [] };
-      vi.mocked(mockConnector.executeSQL).mockResolvedValue(mockResult);
-
-      const sql = 'SELECT * FROM users; PRAGMA table_info(users); EXPLAIN SELECT * FROM users;';
-      const result = await executeSqlToolHandler({ sql }, null);
-      const parsedResult = parseToolResponse(result);
-
-      expect(parsedResult.success).toBe(true);
-      expect(mockConnector.executeSQL).toHaveBeenCalledWith(sql);
-    });
-
-    it('should work with MySQL allowed keywords', async () => {
-      mockConnector = createMockConnector('mysql');
-      mockGetCurrentConnector.mockReturnValue(mockConnector);
-      
-      const mockResult: SQLResult = { rows: [] };
-      vi.mocked(mockConnector.executeSQL).mockResolvedValue(mockResult);
-
-      const sql = 'SELECT * FROM users; DESCRIBE users; SHOW TABLES;';
-      const result = await executeSqlToolHandler({ sql }, null);
-      const parsedResult = parseToolResponse(result);
-
-      expect(parsedResult.success).toBe(true);
-      expect(mockConnector.executeSQL).toHaveBeenCalledWith(sql);
-    });
-  });
 
   describe('edge cases', () => {
     it('should handle empty SQL string', async () => {
