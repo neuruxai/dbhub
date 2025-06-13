@@ -39,6 +39,57 @@ class MySQLIntegrationTest extends IntegrationTestBase<MySQLTestContainer> {
     return new MySQLConnector();
   }
 
+  createSSLTests(): void {
+    describe('SSL Connection Tests', () => {
+      it('should handle SSL mode disable connection', async () => {
+        const baseUri = this.connectionString;
+        const sslDisabledUri = baseUri.includes('?') ? 
+          `${baseUri}&sslmode=disable` : 
+          `${baseUri}?sslmode=disable`;
+        
+        const sslDisabledConnector = new MySQLConnector();
+        
+        // Should connect successfully with sslmode=disable
+        await expect(sslDisabledConnector.connect(sslDisabledUri)).resolves.not.toThrow();
+        
+        // Check SSL status - cipher should be empty when SSL is disabled
+        const result = await sslDisabledConnector.executeSQL("SHOW SESSION STATUS LIKE 'Ssl_cipher'");
+        expect(result.rows).toHaveLength(1);
+        expect(result.rows[0].Variable_name).toBe('Ssl_cipher');
+        expect(result.rows[0].Value).toBe('');
+        
+        await sslDisabledConnector.disconnect();
+      });
+
+      it('should handle SSL mode require connection', async () => {
+        const baseUri = this.connectionString;
+        const sslRequiredUri = baseUri.includes('?') ? 
+          `${baseUri}&sslmode=require` : 
+          `${baseUri}?sslmode=require`;
+        
+        const sslRequiredConnector = new MySQLConnector();
+        
+        // In test containers, SSL may not be supported, so we expect either success or SSL not supported error
+        try {
+          await sslRequiredConnector.connect(sslRequiredUri);
+          
+          // If connection succeeds, check SSL status - cipher should be non-empty when SSL is enabled
+          const result = await sslRequiredConnector.executeSQL("SHOW SESSION STATUS LIKE 'Ssl_cipher'");
+          expect(result.rows).toHaveLength(1);
+          expect(result.rows[0].Variable_name).toBe('Ssl_cipher');
+          expect(result.rows[0].Value).not.toBe('');
+          expect(result.rows[0].Value).toBeTruthy();
+          
+          await sslRequiredConnector.disconnect();
+        } catch (error) {
+          // If SSL is not supported by the test container, that's expected
+          expect(error instanceof Error).toBe(true);
+          expect((error as Error).message).toMatch(/SSL|does not support SSL/);
+        }
+      });
+    });
+  }
+
   async setupTestData(connector: Connector): Promise<void> {
     // Create users table
     await connector.executeSQL(`
@@ -116,6 +167,7 @@ describe('MySQL Connector Integration Tests', () => {
     mysqlTest.createStoredProcedureTests();
   }
   mysqlTest.createErrorHandlingTests();
+  mysqlTest.createSSLTests();
 
   describe('MySQL-specific Features', () => {
     it('should execute multiple statements with native support', async () => {

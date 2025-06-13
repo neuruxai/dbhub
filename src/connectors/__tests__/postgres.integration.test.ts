@@ -43,6 +43,54 @@ class PostgreSQLIntegrationTest extends IntegrationTestBase<PostgreSQLTestContai
     return new PostgresConnector();
   }
 
+  createSSLTests(): void {
+    describe('SSL Connection Tests', () => {
+      it('should handle SSL mode disable connection', async () => {
+        const baseUri = this.connectionString;
+        const sslDisabledUri = baseUri.includes('?') ? 
+          `${baseUri}&sslmode=disable` : 
+          `${baseUri}?sslmode=disable`;
+        
+        const sslDisabledConnector = new PostgresConnector();
+        
+        // Should connect successfully with sslmode=disable
+        await expect(sslDisabledConnector.connect(sslDisabledUri)).resolves.not.toThrow();
+        
+        // Check SSL status - should be disabled (false)
+        const result = await sslDisabledConnector.executeSQL('SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()');
+        expect(result.rows).toHaveLength(1);
+        expect(result.rows[0].ssl).toBe(false);
+        
+        await sslDisabledConnector.disconnect();
+      });
+
+      it('should handle SSL mode require connection', async () => {
+        const baseUri = this.connectionString;
+        const sslRequiredUri = baseUri.includes('?') ? 
+          `${baseUri}&sslmode=require` : 
+          `${baseUri}?sslmode=require`;
+        
+        const sslRequiredConnector = new PostgresConnector();
+        
+        // In test containers, SSL may not be supported, so we expect either success or SSL not supported error
+        try {
+          await sslRequiredConnector.connect(sslRequiredUri);
+          
+          // If connection succeeds, check SSL status - should be enabled (true)
+          const result = await sslRequiredConnector.executeSQL('SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()');
+          expect(result.rows).toHaveLength(1);
+          expect(result.rows[0].ssl).toBe(true);
+          
+          await sslRequiredConnector.disconnect();
+        } catch (error) {
+          // If SSL is not supported by the test container, that's expected
+          expect(error instanceof Error).toBe(true);
+          expect((error as Error).message).toMatch(/SSL|does not support SSL/);
+        }
+      });
+    });
+  }
+
   async setupTestData(connector: Connector): Promise<void> {
     // Create test schema
     await connector.executeSQL('CREATE SCHEMA IF NOT EXISTS test_schema');
@@ -138,6 +186,7 @@ describe('PostgreSQL Connector Integration Tests', () => {
     postgresTest.createStoredProcedureTests();
   }
   postgresTest.createErrorHandlingTests();
+  postgresTest.createSSLTests();
   describe('PostgreSQL-specific Features', () => {
     it('should execute multiple statements with transaction support', async () => {
       const result = await postgresTest.connector.executeSQL(`
@@ -266,5 +315,6 @@ describe('PostgreSQL Connector Integration Tests', () => {
       expect(result.rows[0].name).toBe('John');
       expect(result.rows[0].theme).toBe('dark');
     });
+
   });
 });
