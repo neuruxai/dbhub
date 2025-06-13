@@ -387,6 +387,8 @@ pnpm test:integration -- --testNamePattern="MySQL"
 pnpm test:integration -- --testNamePattern="MariaDB"
 # Run only SQL Server integration tests
 pnpm test:integration -- --testNamePattern="SQL Server"
+# Run only SQLite integration tests
+pnpm test:integration -- --testNamePattern="SQLite"
 ```
 
 All integration tests follow these patterns:

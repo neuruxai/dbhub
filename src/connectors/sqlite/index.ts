@@ -138,8 +138,8 @@ export class SQLiteConnector implements Connector {
     // SQLite doesn't have the concept of schemas like PostgreSQL or MySQL
     // It has a concept of "attached databases" where each database has a name
     // The default database is called 'main', and others can be attached with names
-    // We return the database name or 'main' for in-memory databases as the "schema"
-    return [this.dbPath === ":memory:" ? "main" : this.dbPath];
+    // We always return 'main' as the default schema name
+    return ["main"];
   }
 
   async getTables(schema?: string): Promise<string[]> {
@@ -204,16 +204,24 @@ export class SQLiteConnector implements Connector {
           `
         SELECT 
           name as index_name,
-          CASE 
-            WHEN "unique" = 1 THEN 1
-            ELSE 0
-          END as is_unique
+          0 as is_unique
         FROM sqlite_master 
         WHERE type = 'index' 
         AND tbl_name = ?
       `
         )
         .all(tableName) as { index_name: string; is_unique: number }[];
+
+      // Get unique info from PRAGMA index_list which provides the unique flag
+      const indexListRows = this.db
+        .prepare(`PRAGMA index_list(${tableName})`)
+        .all() as { name: string; unique: number }[];
+      
+      // Create a map of index names to unique status
+      const indexUniqueMap = new Map<string, boolean>();
+      for (const indexListRow of indexListRows) {
+        indexUniqueMap.set(indexListRow.name, indexListRow.unique === 1);
+      }
 
       // Get the primary key info
       const tableInfo = this.db
@@ -238,7 +246,7 @@ export class SQLiteConnector implements Connector {
         results.push({
           index_name: indexInfo.index_name,
           column_names: columnNames,
-          is_unique: indexInfo.is_unique === 1,
+          is_unique: indexUniqueMap.get(indexInfo.index_name) || false,
           is_primary: false,
         });
       }
@@ -275,7 +283,8 @@ export class SQLiteConnector implements Connector {
       const columns = rows.map((row) => ({
         column_name: row.name,
         data_type: row.type,
-        is_nullable: row.notnull === 0 ? "YES" : "NO", // In SQLite, 0 means nullable
+        // In SQLite, primary key columns are automatically NOT NULL even if notnull=0
+        is_nullable: (row.notnull === 1 || row.pk > 0) ? "NO" : "YES",
         column_default: row.dflt_value,
       }));
 
@@ -331,9 +340,26 @@ export class SQLiteConnector implements Connector {
         .filter(statement => statement.length > 0);
 
       if (statements.length === 1) {
-        // Single statement - use prepare for optimal performance and result retrieval
-        const rows = this.db.prepare(statements[0]).all();
-        return { rows };
+        // Single statement - determine if it returns data
+        const trimmedStatement = statements[0].toLowerCase().trim();
+        const isReadStatement = trimmedStatement.startsWith('select') || 
+                               trimmedStatement.startsWith('with') || 
+                               trimmedStatement.startsWith('explain') ||
+                               trimmedStatement.startsWith('analyze') ||
+                               (trimmedStatement.startsWith('pragma') && 
+                                (trimmedStatement.includes('table_info') || 
+                                 trimmedStatement.includes('index_info') ||
+                                 trimmedStatement.includes('index_list') ||
+                                 trimmedStatement.includes('foreign_key_list')));
+
+        if (isReadStatement) {
+          const rows = this.db.prepare(statements[0]).all();
+          return { rows };
+        } else {
+          // Use run() for statements that don't return data
+          this.db.prepare(statements[0]).run();
+          return { rows: [] };
+        }
       } else {
         // Multiple statements - use native .exec() for optimal performance
         // Note: .exec() doesn't return results, so we need to handle SELECT statements differently
@@ -347,7 +373,11 @@ export class SQLiteConnector implements Connector {
               trimmedStatement.startsWith('with') || 
               trimmedStatement.startsWith('explain') ||
               trimmedStatement.startsWith('analyze') ||
-              trimmedStatement.startsWith('pragma')) {
+              (trimmedStatement.startsWith('pragma') && 
+               (trimmedStatement.includes('table_info') || 
+                trimmedStatement.includes('index_info') ||
+                trimmedStatement.includes('index_list') ||
+                trimmedStatement.includes('foreign_key_list')))) {
             readStatements.push(statement);
           } else {
             writeStatements.push(statement);
