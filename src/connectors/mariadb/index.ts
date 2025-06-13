@@ -115,11 +115,11 @@ export class MariaDBConnector implements Connector {
 
     try {
       // In MariaDB, schemas are equivalent to databases
-      const [rows] = (await this.pool.query(`
+      const rows = await this.pool.query(`
         SELECT SCHEMA_NAME 
         FROM INFORMATION_SCHEMA.SCHEMATA
         ORDER BY SCHEMA_NAME
-      `)) as [any[], any];
+      `) as any[];
 
       return rows.map((row) => row.SCHEMA_NAME);
     } catch (error) {
@@ -142,7 +142,7 @@ export class MariaDBConnector implements Connector {
       const queryParams = schema ? [schema] : [];
 
       // Get all tables from the specified schema or current database
-      const [rows] = (await this.pool.query(
+      const rows = await this.pool.query(
         `
         SELECT TABLE_NAME 
         FROM INFORMATION_SCHEMA.TABLES 
@@ -150,7 +150,7 @@ export class MariaDBConnector implements Connector {
         ORDER BY TABLE_NAME
       `,
         queryParams
-      )) as [any[], any];
+      ) as any[];
 
       return rows.map((row) => row.TABLE_NAME);
     } catch (error) {
@@ -171,7 +171,7 @@ export class MariaDBConnector implements Connector {
 
       const queryParams = schema ? [schema, tableName] : [tableName];
 
-      const [rows] = (await this.pool.query(
+      const rows = await this.pool.query(
         `
         SELECT COUNT(*) AS COUNT
         FROM INFORMATION_SCHEMA.TABLES 
@@ -179,7 +179,7 @@ export class MariaDBConnector implements Connector {
         AND TABLE_NAME = ?
       `,
         queryParams
-      )) as [any[], any];
+      ) as any[];
 
       return rows[0].COUNT > 0;
     } catch (error) {
@@ -200,7 +200,7 @@ export class MariaDBConnector implements Connector {
       const queryParams = schema ? [schema, tableName] : [tableName];
 
       // Get information about indexes
-      const [indexRows] = (await this.pool.query(
+      const indexRows = await this.pool.query(
         `
         SELECT 
           INDEX_NAME,
@@ -217,7 +217,7 @@ export class MariaDBConnector implements Connector {
           SEQ_IN_INDEX
       `,
         queryParams
-      )) as [any[], any];
+      ) as any[];
 
       // Process the results to group columns by index
       const indexMap = new Map<
@@ -279,7 +279,7 @@ export class MariaDBConnector implements Connector {
       const queryParams = schema ? [schema, tableName] : [tableName];
 
       // Get table columns
-      const [rows] = (await this.pool.query(
+      const rows = await this.pool.query(
         `
         SELECT 
           COLUMN_NAME as column_name, 
@@ -292,7 +292,7 @@ export class MariaDBConnector implements Connector {
         ORDER BY ORDINAL_POSITION
       `,
         queryParams
-      )) as [any[], any];
+      ) as any[];
 
       return rows;
     } catch (error) {
@@ -315,7 +315,7 @@ export class MariaDBConnector implements Connector {
       const queryParams = schema ? [schema] : [];
 
       // Get all stored procedures and functions
-      const [rows] = (await this.pool.query(
+      const rows = await this.pool.query(
         `
         SELECT ROUTINE_NAME
         FROM INFORMATION_SCHEMA.ROUTINES
@@ -323,7 +323,7 @@ export class MariaDBConnector implements Connector {
         ORDER BY ROUTINE_NAME
       `,
         queryParams
-      )) as [any[], any];
+      ) as any[];
 
       return rows.map((row) => row.ROUTINE_NAME);
     } catch (error) {
@@ -346,7 +346,7 @@ export class MariaDBConnector implements Connector {
       const queryParams = schema ? [schema, procedureName] : [procedureName];
 
       // Get details of the stored procedure
-      const [rows] = (await this.pool.query(
+      const rows = await this.pool.query(
         `
         SELECT 
           r.ROUTINE_NAME AS procedure_name,
@@ -373,7 +373,7 @@ export class MariaDBConnector implements Connector {
         AND r.ROUTINE_NAME = ?
       `,
         queryParams
-      )) as [any[], any];
+      ) as any[];
 
       if (rows.length === 0) {
         const schemaName = schema || "current schema";
@@ -392,9 +392,9 @@ export class MariaDBConnector implements Connector {
         if (procedure.procedure_type === "procedure") {
           // Try to get the definition from SHOW CREATE PROCEDURE
           try {
-            const [defRows] = (await this.pool.query(`
+            const defRows = await this.pool.query(`
               SHOW CREATE PROCEDURE ${schemaValue}.${procedureName}
-            `)) as [any[], any];
+            `) as any[];
 
             if (defRows && defRows.length > 0) {
               definition = defRows[0]["Create Procedure"];
@@ -405,9 +405,9 @@ export class MariaDBConnector implements Connector {
         } else {
           // Try to get the definition for functions
           try {
-            const [defRows] = (await this.pool.query(`
+            const defRows = await this.pool.query(`
               SHOW CREATE FUNCTION ${schemaValue}.${procedureName}
-            `)) as [any[], any];
+            `) as any[];
 
             if (defRows && defRows.length > 0) {
               definition = defRows[0]["Create Function"];
@@ -419,14 +419,14 @@ export class MariaDBConnector implements Connector {
 
         // Last attempt - try to get from information_schema.routines if not found yet
         if (!definition) {
-          const [bodyRows] = (await this.pool.query(
+          const bodyRows = await this.pool.query(
             `
             SELECT ROUTINE_DEFINITION, ROUTINE_BODY 
             FROM INFORMATION_SCHEMA.ROUTINES
             WHERE ROUTINE_SCHEMA = ? AND ROUTINE_NAME = ?
           `,
             [schemaValue, procedureName]
-          )) as [any[], any];
+          ) as any[];
 
           if (bodyRows && bodyRows.length > 0) {
             if (bodyRows[0].ROUTINE_DEFINITION) {
@@ -457,7 +457,7 @@ export class MariaDBConnector implements Connector {
 
   // Helper method to get current schema (database) name
   private async getCurrentSchema(): Promise<string> {
-    const [rows] = (await this.pool!.query("SELECT DATABASE() AS DB")) as [any[], any];
+    const rows = await this.pool!.query("SELECT DATABASE() AS DB") as any[];
     return rows[0].DB;
   }
 
@@ -467,32 +467,34 @@ export class MariaDBConnector implements Connector {
     }
 
     try {
-      // Use pool.query with multipleStatements: true support
+      // Use pool.query - MariaDB driver returns rows directly for single statements
       const results = await this.pool.query(sql) as any;
       
-      // MariaDB with multipleStatements returns:
-      // - Single statement: [rows, fields] 
-      // - Multiple statements: [array_of_results, fields] where array_of_results contains [rows, fields] for each statement
+      // MariaDB driver returns different formats:
+      // - Single statement: returns rows array directly
+      // - Multiple statements: returns array of results (when multipleStatements is true)
       
-      const [firstResult] = results;
-      
-      // Check if this is a multi-statement result by seeing if firstResult[0] is also an array
-      // indicating it contains multiple [rows, fields] pairs
-      if (Array.isArray(firstResult) && firstResult.length > 0 && 
-          Array.isArray(firstResult[0]) && firstResult[0].length === 2) {
-        // Multiple statements - firstResult is an array of [rows, fields] pairs
-        let allRows: any[] = [];
-        
-        for (const [rows, _fields] of firstResult) {
-          if (Array.isArray(rows)) {
-            allRows.push(...rows);
+      if (Array.isArray(results)) {
+        // Check if this looks like multiple statement results
+        // Multiple statements return an array where each element might be an array of results
+        if (results.length > 0 && Array.isArray(results[0]) && results[0].length > 0) {
+          // This might be multiple statement results - flatten them
+          let allRows: any[] = [];
+          
+          for (const result of results) {
+            if (Array.isArray(result)) {
+              allRows.push(...result);
+            }
           }
+          
+          return { rows: allRows };
+        } else {
+          // Single statement result - results is the rows array
+          return { rows: results };
         }
-        
-        return { rows: allRows };
       } else {
-        // Single statement - firstResult is the rows array directly
-        return { rows: Array.isArray(firstResult) ? firstResult : [] };
+        // Non-array result (like for INSERT/UPDATE/DELETE without RETURNING)
+        return { rows: [] };
       }
     } catch (error) {
       console.error("Error executing query:", error);
