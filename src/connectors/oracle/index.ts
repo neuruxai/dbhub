@@ -2,6 +2,7 @@ import { Connector, SQLResult, TableColumn, TableIndex, ConnectorRegistry, Store
 import oracledb, { Connection, ExecuteManyOptions, ExecuteOptions, Pool, Result, BindParameters } from 'oracledb';
 import { allowedKeywords } from '../../utils/allowed-keywords.js';
 import { SafeURL } from '../../utils/safe-url.js';
+import { obfuscateDSNPassword } from '../../utils/dsn-obfuscate.js';
 
 // Adjust output format for large numbers and dates if needed
 // oracledb.fetchAsString = [ oracledb.NUMBER, oracledb.DATE, oracledb.TIMESTAMP_TZ ];
@@ -77,7 +78,11 @@ export class OracleConnector implements Connector {
   dsnParser = {
     parse: async (dsn: string): Promise<oracledb.PoolAttributes> => {
       if (!this.dsnParser.isValidDSN(dsn)) {
-        throw new Error(`Invalid Oracle DSN: ${dsn}`);
+        const obfuscatedDSN = obfuscateDSNPassword(dsn);
+        const expectedFormat = this.dsnParser.getSampleDSN();
+        throw new Error(
+          `Invalid Oracle DSN format.\nProvided: ${obfuscatedDSN}\nExpected: ${expectedFormat}`
+        );
       }
 
       try {

@@ -10,6 +10,7 @@ import {
   StoredProcedure,
 } from "../interface.js";
 import { SafeURL } from "../../utils/safe-url.js";
+import { obfuscateDSNPassword } from "../../utils/dsn-obfuscate.js";
 
 /**
  * MariaDB DSN Parser
@@ -23,7 +24,11 @@ class MariadbDSNParser implements DSNParser {
   async parse(dsn: string): Promise<mariadb.ConnectionConfig> {
     // Basic validation
     if (!this.isValidDSN(dsn)) {
-      throw new Error(`Invalid MariaDB DSN: ${dsn}`);
+      const obfuscatedDSN = obfuscateDSNPassword(dsn);
+      const expectedFormat = this.getSampleDSN();
+      throw new Error(
+        `Invalid MariaDB DSN format.\nProvided: ${obfuscatedDSN}\nExpected: ${expectedFormat}`
+      );
     }
 
     try {

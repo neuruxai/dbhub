@@ -11,6 +11,7 @@ import {
   StoredProcedure,
 } from "../interface.js";
 import { SafeURL } from "../../utils/safe-url.js";
+import { obfuscateDSNPassword } from "../../utils/dsn-obfuscate.js";
 
 /**
  * PostgreSQL DSN Parser
@@ -24,7 +25,11 @@ class PostgresDSNParser implements DSNParser {
   async parse(dsn: string): Promise<pg.PoolConfig> {
     // Basic validation
     if (!this.isValidDSN(dsn)) {
-      throw new Error(`Invalid PostgreSQL DSN: ${dsn}`);
+      const obfuscatedDSN = obfuscateDSNPassword(dsn);
+      const expectedFormat = this.getSampleDSN();
+      throw new Error(
+        `Invalid PostgreSQL DSN format.\nProvided: ${obfuscatedDSN}\nExpected: ${expectedFormat}`
+      );
     }
 
     try {

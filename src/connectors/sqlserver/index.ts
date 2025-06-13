@@ -11,6 +11,7 @@ import {
 } from "../interface.js";
 import { DefaultAzureCredential } from "@azure/identity";
 import { SafeURL } from "../../utils/safe-url.js";
+import { obfuscateDSNPassword } from "../../utils/dsn-obfuscate.js";
 
 /**
  * SQL Server DSN parser
@@ -20,8 +21,10 @@ export class SQLServerDSNParser implements DSNParser {
   async parse(dsn: string): Promise<sql.config> {
     // Basic validation
     if (!this.isValidDSN(dsn)) {
+      const obfuscatedDSN = obfuscateDSNPassword(dsn);
+      const expectedFormat = this.getSampleDSN();
       throw new Error(
-        "Invalid SQL Server DSN format. Expected: sqlserver://username:password@host:port/database"
+        `Invalid SQL Server DSN format.\nProvided: ${obfuscatedDSN}\nExpected: ${expectedFormat}`
       );
     }
 

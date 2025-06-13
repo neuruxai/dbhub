@@ -10,6 +10,7 @@ import {
   StoredProcedure,
 } from "../interface.js";
 import { SafeURL } from "../../utils/safe-url.js";
+import { obfuscateDSNPassword } from "../../utils/dsn-obfuscate.js";
 
 /**
  * MySQL DSN Parser
@@ -23,7 +24,11 @@ class MySQLDSNParser implements DSNParser {
   async parse(dsn: string): Promise<mysql.ConnectionOptions> {
     // Basic validation
     if (!this.isValidDSN(dsn)) {
-      throw new Error(`Invalid MySQL DSN: ${dsn}`);
+      const obfuscatedDSN = obfuscateDSNPassword(dsn);
+      const expectedFormat = this.getSampleDSN();
+      throw new Error(
+        `Invalid MySQL DSN format.\nProvided: ${obfuscatedDSN}\nExpected: ${expectedFormat}`
+      );
     }
 
     try {

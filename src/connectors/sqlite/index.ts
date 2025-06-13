@@ -17,6 +17,7 @@ import {
 } from "../interface.js";
 import Database from "better-sqlite3";
 import { SafeURL } from "../../utils/safe-url.js";
+import { obfuscateDSNPassword } from "../../utils/dsn-obfuscate.js";
 
 /**
  * SQLite DSN Parser
@@ -29,7 +30,11 @@ class SQLiteDSNParser implements DSNParser {
   async parse(dsn: string): Promise<{ dbPath: string }> {
     // Basic validation
     if (!this.isValidDSN(dsn)) {
-      throw new Error(`Invalid SQLite DSN: ${dsn}`);
+      const obfuscatedDSN = obfuscateDSNPassword(dsn);
+      const expectedFormat = this.getSampleDSN();
+      throw new Error(
+        `Invalid SQLite DSN format.\nProvided: ${obfuscatedDSN}\nExpected: ${expectedFormat}`
+      );
     }
 
     try {
