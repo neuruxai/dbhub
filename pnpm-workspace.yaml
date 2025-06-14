@@ -1,5 +1,9 @@
-ignoredBuiltDependencies:
-  - esbuild
-
 approvedBuilds:
+  - better-sqlite3
+ignoredBuiltDependencies:
+  - cpu-features
+  - esbuild
+  - protobufjs
+  - ssh2
+onlyBuiltDependencies:
   - better-sqlite3
