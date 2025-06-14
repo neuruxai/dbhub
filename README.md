@@ -24,8 +24,6 @@ DBHub is a universal database gateway implementing the Model Context Protocol (M
  |                  |    |              |    |                  |
  |  Cursor          +--->+    DBHub     +--->+    SQL Server    |
  |                  |    |              |    |                  |
- |  Other Clients   +--->+              +--->+    SQLite        |
- |                  |    |              |    |                  |
  |                  |    |              +--->+    MySQL         |
  |                  |    |              |    |                  |
  |                  |    |              +--->+    MariaDB       |
@@ -44,27 +42,27 @@ https://demo.dbhub.ai/message connects a [sample employee database](https://gith
 
 ### Database Resources
 
-| Resource Name               | URI Format                                             | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite |
-| --------------------------- | ------------------------------------------------------ | :--------: | :---: | :-----: | :--------: | :----: |
-| schemas                     | `db://schemas`                                         |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
-| tables_in_schema            | `db://schemas/{schemaName}/tables`                     |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
-| table_structure_in_schema   | `db://schemas/{schemaName}/tables/{tableName}`         |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
-| indexes_in_table            | `db://schemas/{schemaName}/tables/{tableName}/indexes` |     ✅     |  ✅   |   ✅    |     ✅     |   ✅   |
-| procedures_in_schema        | `db://schemas/{schemaName}/procedures`                 |     ✅     |  ✅   |   ✅    |     ✅     |   ❌   |
-| procedure_details_in_schema | `db://schemas/{schemaName}/procedures/{procedureName}` |     ✅     |  ✅   |   ✅    |     ✅     |   ❌   |
+| Resource Name               | URI Format                                             | PostgreSQL | MySQL | MariaDB | SQL Server |
+| --------------------------- | ------------------------------------------------------ | :--------: | :---: | :-----: | :--------: |
+| schemas                     | `db://schemas`                                         |     ✅     |  ✅   |   ✅    |     ✅     |
+| tables_in_schema            | `db://schemas/{schemaName}/tables`                     |     ✅     |  ✅   |   ✅    |     ✅     |
+| table_structure_in_schema   | `db://schemas/{schemaName}/tables/{tableName}`         |     ✅     |  ✅   |   ✅    |     ✅     |
+| indexes_in_table            | `db://schemas/{schemaName}/tables/{tableName}/indexes` |     ✅     |  ✅   |   ✅    |     ✅     |
+| procedures_in_schema        | `db://schemas/{schemaName}/procedures`                 |     ✅     |  ✅   |   ✅    |     ✅     |
+| procedure_details_in_schema | `db://schemas/{schemaName}/procedures/{procedureName}` |     ✅     |  ✅   |   ✅    |     ✅     |
 
 ### Database Tools
 
-| Tool        | Command Name  | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite |
-| ----------- | ------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: | ------ |
-| Execute SQL | `execute_sql` | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |
+| Tool        | Command Name  | Description                                                         | PostgreSQL | MySQL | MariaDB | SQL Server |
+| ----------- | ------------- | ------------------------------------------------------------------- | :--------: | :---: | :-----: | :--------: |
+| Execute SQL | `execute_sql` | Execute single or multiple SQL statements (separated by semicolons) |     ✅     |  ✅   |   ✅    |     ✅     |
 
 ### Prompt Capabilities
 
-| Prompt              | Command Name   | PostgreSQL | MySQL | MariaDB | SQL Server | SQLite |
-| ------------------- | -------------- | :--------: | :---: | :-----: | :--------: | ------ |
-| Generate SQL        | `generate_sql` |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |
-| Explain DB Elements | `explain_db`   |     ✅     |  ✅   |   ✅    |     ✅     | ✅     |
+| Prompt              | Command Name   | PostgreSQL | MySQL | MariaDB | SQL Server |
+| ------------------- | -------------- | :--------: | :---: | :-----: | :--------: |
+| Generate SQL        | `generate_sql` |     ✅     |  ✅   |   ✅    |     ✅     |
+| Explain DB Elements | `explain_db`   |     ✅     |  ✅   |   ✅    |     ✅     |
 
 ## Installation
 
@@ -81,16 +79,6 @@ docker run --rm --init \
    --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
 ```
 
-```bash
-# Demo mode with sample employee database
-docker run --rm --init \
-   --name dbhub \
-   --publish 8080:8080 \
-   bytebase/dbhub \
-   --transport http \
-   --port 8080 \
-   --demo
-```
 
 
 ### NPM
@@ -100,12 +88,6 @@ docker run --rm --init \
 npx @bytebase/dbhub --transport http --port 8080 --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
 ```
 
-```bash
-# Demo mode with sample employee database
-npx @bytebase/dbhub --transport http --port 8080 --demo
-```
-
-> Note: The demo mode includes a bundled SQLite sample "employee" database with tables for employees, departments, salaries, and more.
 
 ### Claude Desktop
 
@@ -142,10 +124,6 @@ npx @bytebase/dbhub --transport http --port 8080 --demo
         "postgres://user:password@localhost:5432/dbname?sslmode=disable"
       ]
     },
-    "dbhub-demo": {
-      "command": "npx",
-      "args": ["-y", "@bytebase/dbhub", "--transport", "stdio", "--demo"]
-    }
   }
 }
 ```
@@ -171,7 +149,6 @@ You can specify the SSL mode using the `sslmode` parameter in your DSN string:
 | MySQL      |        ✅         |        ✅         |    Certificate verification    |
 | MariaDB    |        ✅         |        ✅         |    Certificate verification    |
 | SQL Server |        ✅         |        ✅         |    Certificate verification    |
-| SQLite     |        ❌         |        ❌         |        N/A (file-based)        |
 
 **SSL Mode Options:**
 
@@ -207,12 +184,6 @@ In read-only mode, only [readonly SQL operations](https://github.com/bytebase/db
 This provides an additional layer of security when connecting to production databases.
 
 ### Configure your database connection
-
-You can use DBHub in demo mode with a sample employee database for testing:
-
-```bash
-npx @bytebase/dbhub  --demo
-```
 
 > [!WARNING]
 > If your user/password contains special characters, you need to escape them first. (e.g. `pass#word` should be escaped as `pass%23word`)
@@ -250,7 +221,6 @@ DBHub supports the following database connection string formats:
 | MariaDB    | `mariadb://[user]:[password]@[host]:[port]/[database]`    | `mariadb://user:password@localhost:3306/dbname?sslmode=disable`                                                |
 | PostgreSQL | `postgres://[user]:[password]@[host]:[port]/[database]`   | `postgres://user:password@localhost:5432/dbname?sslmode=disable`                                               |
 | SQL Server | `sqlserver://[user]:[password]@[host]:[port]/[database]`  | `sqlserver://user:password@localhost:1433/dbname?sslmode=disable`                                              |
-| SQLite     | `sqlite:///[path/to/file]` or `sqlite:///:memory:`        | `sqlite:///path/to/database.db`, `sqlite:C:/Users/YourName/data/database.db (windows)` or `sqlite:///:memory:` |
 
 
 #### SQL Server
@@ -276,15 +246,13 @@ Extra query parameters:
 
 ### Command line options
 
-| Option    | Environment Variable | Description                                                      | Default                      |
-| --------- | -------------------- | ---------------------------------------------------------------- | ---------------------------- |
-| dsn       | `DSN`                | Database connection string                                       | Required if not in demo mode |
-| transport | `TRANSPORT`          | Transport mode: `stdio` or `http`                                | `stdio`                      |
-| port      | `PORT`               | HTTP server port (only applicable when using `--transport=http`) | `8080`                       |
-| readonly  | `READONLY`           | Restrict SQL execution to read-only operations                   | `false`                      |
-| demo      | N/A                  | Run in demo mode with sample employee database                   | `false`                      |
+| Option    | Environment Variable | Description                                                      | Default  |
+| --------- | -------------------- | ---------------------------------------------------------------- | -------- |
+| dsn       | `DSN`                | Database connection string                                       | Required |
+| transport | `TRANSPORT`          | Transport mode: `stdio` or `http`                                | `stdio`  |
+| port      | `PORT`               | HTTP server port (only applicable when using `--transport=http`) | `8080`   |
+| readonly  | `READONLY`           | Restrict SQL execution to read-only operations                   | `false`  |
 
-The demo mode uses an in-memory SQLite database loaded with the [sample employee database](https://github.com/bytebase/dbhub/tree/main/resources/employee-sqlite) that includes tables for employees, departments, titles, salaries, department employees, and department managers. The sample database includes SQL scripts for table creation, data loading, and testing.
 
 ## Development
 
@@ -342,8 +310,6 @@ pnpm test src/connectors/__tests__/mysql.integration.test.ts
 pnpm test src/connectors/__tests__/mariadb.integration.test.ts
 # Run only SQL Server integration tests
 pnpm test src/connectors/__tests__/sqlserver.integration.test.ts
-# Run only SQLite integration tests
-pnpm test src/connectors/__tests__/sqlite.integration.test.ts
 # Run JSON RPC integration tests
 pnpm test src/__tests__/json-rpc-integration.test.ts
 ```

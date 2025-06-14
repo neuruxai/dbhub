@@ -71,14 +71,6 @@ export function loadEnvFiles(): string | null {
   return null;
 }
 
-/**
- * Check if demo mode is enabled from command line args
- * Returns true if --demo flag is provided
- */
-export function isDemoMode(): boolean {
-  const args = parseCommandLineArgs();
-  return args.demo === "true";
-}
 
 /**
  * Check if readonly mode is enabled from command line args or environment
@@ -105,19 +97,9 @@ export function isReadOnlyMode(): boolean {
  * Resolve DSN from command line args, environment variables, or .env files
  * Returns the DSN and its source, or null if not found
  */
-export function resolveDSN(): { dsn: string; source: string; isDemo?: boolean } | null {
+export function resolveDSN(): { dsn: string; source: string } | null {
   // Get command line arguments
   const args = parseCommandLineArgs();
-
-  // Check for demo mode first (highest priority)
-  if (isDemoMode()) {
-    // Will use in-memory SQLite with demo data
-    return {
-      dsn: "sqlite:///:memory:",
-      source: "demo mode",
-      isDemo: true,
-    };
-  }
 
   // 1. Check command line arguments
   if (args.dsn) {

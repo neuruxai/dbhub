@@ -23,7 +23,6 @@
 - Register connector with `ConnectorRegistry.register(connector)`
 - DSN Examples:
   - PostgreSQL: `postgres://user:password@localhost:5432/dbname`
-  - SQLite: `sqlite:///path/to/database.db`
 
 ## Code Style
 

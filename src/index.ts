@@ -3,7 +3,6 @@
 // Import connector modules to register them
 import "./connectors/postgres/index.js"; // Register PostgreSQL connector
 import "./connectors/sqlserver/index.js"; // Register SQL Server connector
-import "./connectors/sqlite/index.js"; // SQLite connector
 import "./connectors/mysql/index.js"; // MySQL connector
 import "./connectors/mariadb/index.js"; // MariaDB connector
 
