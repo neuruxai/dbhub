@@ -3,5 +3,5 @@
 # Run lint-staged to check only the files that are being committed
 pnpm lint-staged
 
-# Run the test suite to ensure everything passes
-pnpm test
+# Run the test suite excluding SQL Server tests (too slow for pre-commit)
+pnpm vitest run --exclude "**/sqlserver.integration.test.ts"
