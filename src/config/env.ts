@@ -94,6 +94,71 @@ export function isReadOnlyMode(): boolean {
 }
 
 /**
+ * Resolve authentication token from command line args or environment variables
+ * Returns the token and its source, or null if not found
+ */
+export function resolveAuthToken(): { token: string; source: string } | null {
+  // Get command line arguments
+  const args = parseCommandLineArgs();
+
+  // 1. Check command line arguments first (highest priority)
+  if (args["auth-token"]) {
+    return { token: args["auth-token"], source: "command line argument" };
+  }
+
+  // 2. Check environment variables
+  if (process.env.AUTH_TOKEN) {
+    return { token: process.env.AUTH_TOKEN, source: "environment variable" };
+  }
+
+  // 3. Check for token file path
+  if (args["auth-token-file"]) {
+    try {
+      const tokenPath = path.resolve(args["auth-token-file"]);
+      const token = fs.readFileSync(tokenPath, "utf8").trim();
+      return { token, source: `file: ${tokenPath}` };
+    } catch (error) {
+      console.error(`Failed to read auth token file: ${args["auth-token-file"]}`, error);
+      return null;
+    }
+  }
+
+  if (process.env.AUTH_TOKEN_FILE) {
+    try {
+      const tokenPath = path.resolve(process.env.AUTH_TOKEN_FILE);
+      const token = fs.readFileSync(tokenPath, "utf8").trim();
+      return { token, source: `file: ${tokenPath}` };
+    } catch (error) {
+      console.error(`Failed to read auth token file: ${process.env.AUTH_TOKEN_FILE}`, error);
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check if authentication is required from command line args or environment
+ * Returns true if --require-auth flag is provided
+ */
+export function isAuthRequired(): boolean {
+  const args = parseCommandLineArgs();
+  
+  // Check command line args first
+  if (args["require-auth"] !== undefined) {
+    return args["require-auth"] === "true";
+  }
+  
+  // Check environment variable
+  if (process.env.REQUIRE_AUTH !== undefined) {
+    return process.env.REQUIRE_AUTH === "true";
+  }
+  
+  // Default to false for backwards compatibility
+  return false;
+}
+
+/**
  * Resolve DSN from command line args, environment variables, or .env files
  * Returns the DSN and its source, or null if not found
  */

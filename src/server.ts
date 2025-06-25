@@ -8,10 +8,11 @@ import { fileURLToPath } from "url";
 
 import { ConnectorManager } from "./connectors/manager.js";
 import { ConnectorRegistry } from "./connectors/interface.js";
-import { resolveDSN, resolveTransport, resolvePort, redactDSN, isReadOnlyMode } from "./config/env.js";
+import { resolveDSN, resolveTransport, resolvePort, redactDSN, isReadOnlyMode, resolveAuthToken, isAuthRequired } from "./config/env.js";
 import { registerResources } from "./resources/index.js";
 import { registerTools } from "./tools/index.js";
 import { registerPrompts } from "./prompts/index.js";
+import { timingSafeEqual } from "crypto";
 
 // Create __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +25,28 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 // Server info
 export const SERVER_NAME = "DBHub MCP Server";
 export const SERVER_VERSION = packageJson.version;
+
+/**
+ * Validate authentication token using constant-time comparison
+ */
+function validateAuthToken(providedToken: string, expectedToken: string): boolean {
+  if (!providedToken || !expectedToken) {
+    return false;
+  }
+  
+  const providedBuffer = Buffer.from(providedToken, "utf8");
+  const expectedBuffer = Buffer.from(expectedToken, "utf8");
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  try {
+    return timingSafeEqual(providedBuffer, expectedBuffer);
+  } catch (error) {
+    return false;
+  }
+}
 
 /**
  * Generate ASCII art banner with version information
@@ -105,6 +128,8 @@ See documentation for more details on configuring database connections.
 
     // Print ASCII art banner with version and slogan
     const readonly = isReadOnlyMode();
+    const authRequired = isAuthRequired();
+    const authTokenData = resolveAuthToken();
     
     // Collect active modes
     const activeModes: string[] = [];
@@ -115,9 +140,22 @@ See documentation for more details on configuring database connections.
       modeDescriptions.push("only read only queries allowed");
     }
     
+    if (authRequired || authTokenData) {
+      activeModes.push("AUTH");
+      if (authRequired) {
+        modeDescriptions.push("authentication required");
+      } else {
+        modeDescriptions.push("authentication enabled");
+      }
+    }
+    
     // Output mode information
     if (activeModes.length > 0) {
       console.error(`Running in ${activeModes.join(' and ')} mode - ${modeDescriptions.join(', ')}`);
+    }
+    
+    if (authTokenData) {
+      console.error(`Authentication token loaded from: ${authTokenData.source}`);
     }
     
     console.error(generateBanner(SERVER_VERSION, activeModes));
@@ -130,6 +168,73 @@ See documentation for more details on configuring database connections.
       // Enable JSON parsing
       app.use(express.json());
 
+      // Set up authentication middleware if configured
+      if (authTokenData) {
+        app.use((req, res, next) => {
+          const authHeader = req.headers.authorization;
+          
+          // Skip authentication if not required and no token provided
+          if (!authRequired && !authHeader) {
+            return next();
+          }
+
+          // If authentication is required but no Authorization header provided
+          if (authRequired && !authHeader) {
+            return res.status(401).json({ 
+              error: "Authentication required",
+              message: "Missing Authorization header"
+            });
+          }
+
+          if (!authHeader) {
+            return next(); // No auth header and not required
+          }
+
+          // SECURITY: Normalize and validate header format strictly
+          const normalizedHeader = authHeader.trim();
+          if (!normalizedHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ 
+              error: "Invalid authentication format",
+              message: "Authorization header must use Bearer token format"
+            });
+          }
+
+          const providedToken = normalizedHeader.slice(7); // Remove "Bearer " prefix
+          
+          // Reject empty tokens immediately (security: don't pass to timing-sensitive validation)
+          if (!providedToken || providedToken.trim() === "") {
+            return res.status(401).json({ 
+              error: "Invalid authentication format",
+              message: "Bearer token cannot be empty"
+            });
+          }
+          
+          // SECURITY: Reject tokens with any whitespace or control characters
+          // This prevents newline injection and other formatting attacks
+          if (providedToken !== providedToken.trim() || /[\r\n\t\x00-\x1F\x7F-\x9F]/.test(providedToken)) {
+            return res.status(401).json({ 
+              error: "Invalid authentication format",
+              message: "Bearer token contains invalid characters"
+            });
+          }
+
+          if (!validateAuthToken(providedToken, authTokenData.token)) {
+            console.error(`Authentication failed from ${req.ip} - invalid token`);
+            return res.status(403).json({ 
+              error: "Authentication failed",
+              message: "Invalid token"
+            });
+          }
+
+          console.error(`Authentication successful from ${req.ip} using token from ${authTokenData.source}`);
+          next();
+        });
+      } else if (authRequired) {
+        console.error("ERROR: Authentication is required (--require-auth) but no auth token configured");
+        console.error("Please provide an auth token using --auth-token, AUTH_TOKEN environment variable, or --auth-token-file");
+        process.exit(1);
+      }
+
       // Handle CORS and security headers
       app.use((req, res, next) => {
         // Validate Origin header to prevent DNS rebinding attacks
@@ -140,7 +245,8 @@ See documentation for more details on configuring database connections.
         
         res.header('Access-Control-Allow-Origin', origin || 'http://localhost');
         res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Mcp-Session-Id');
+        // Include Authorization header in CORS configuration for auth support
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Mcp-Session-Id, Authorization');
         res.header('Access-Control-Allow-Credentials', 'true');
         
         if (req.method === 'OPTIONS') {

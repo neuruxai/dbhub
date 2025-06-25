@@ -170,7 +170,9 @@ postgres://user:password@localhost:5432/dbname?sslmode=require
 postgres://user:password@localhost:5432/dbname
 ```
 
-### Read-only Mode
+### Security Features
+
+#### Read-only Mode
 
 You can run DBHub in read-only mode, which restricts SQL query execution to read-only operations:
 
@@ -181,7 +183,33 @@ npx @bytebase/dbhub --readonly --dsn "postgres://user:password@localhost:5432/db
 
 In read-only mode, only [readonly SQL operations](https://github.com/bytebase/dbhub/blob/main/src/utils/allowed-keywords.ts) are allowed.
 
-This provides an additional layer of security when connecting to production databases.
+#### Authentication (HTTP Transport Only)
+
+DBHub supports Bearer token authentication for HTTP transport to secure the MCP server endpoint:
+
+```bash
+# Run with authentication enabled (optional - clients can connect with or without token)
+npx @bytebase/dbhub --transport http --auth-token "your-secret-token" --dsn "postgres://user:password@localhost:5432/dbname"
+
+# Require authentication (all requests must include valid token)
+npx @bytebase/dbhub --transport http --auth-token "your-secret-token" --require-auth --dsn "postgres://user:password@localhost:5432/dbname"
+
+# Load token from file
+npx @bytebase/dbhub --transport http --auth-token-file "/path/to/token.txt" --dsn "postgres://user:password@localhost:5432/dbname"
+```
+
+Clients must include the token in the `Authorization` header:
+```
+Authorization: Bearer your-secret-token
+```
+
+**Security Best Practices:**
+- Use strong, randomly generated tokens (minimum 32 characters)
+- Store tokens securely and rotate them regularly
+- Use `--require-auth` for production deployments
+- Authentication only applies to HTTP transport (STDIO transport uses process-level security)
+
+These security features provide additional protection when connecting to production databases or exposing the server over HTTP.
 
 ### Configure your database connection
 
@@ -246,12 +274,15 @@ Extra query parameters:
 
 ### Command line options
 
-| Option    | Environment Variable | Description                                                      | Default  |
-| --------- | -------------------- | ---------------------------------------------------------------- | -------- |
-| dsn       | `DSN`                | Database connection string                                       | Required |
-| transport | `TRANSPORT`          | Transport mode: `stdio` or `http`                                | `stdio`  |
-| port      | `PORT`               | HTTP server port (only applicable when using `--transport=http`) | `8080`   |
-| readonly  | `READONLY`           | Restrict SQL execution to read-only operations                   | `false`  |
+| Option         | Environment Variable | Description                                                      | Default  |
+| -------------- | -------------------- | ---------------------------------------------------------------- | -------- |
+| dsn            | `DSN`                | Database connection string                                       | Required |
+| transport      | `TRANSPORT`          | Transport mode: `stdio` or `http`                                | `stdio`  |
+| port           | `PORT`               | HTTP server port (only applicable when using `--transport=http`) | `8080`   |
+| readonly       | `READONLY`           | Restrict SQL execution to read-only operations                   | `false`  |
+| auth-token     | `AUTH_TOKEN`         | Bearer token for HTTP authentication                            | Optional |
+| auth-token-file| `AUTH_TOKEN_FILE`    | Path to file containing Bearer token                             | Optional |
+| require-auth   | `REQUIRE_AUTH`       | Require authentication for all HTTP requests                     | `false`  |
 
 
 ## Development
