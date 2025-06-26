@@ -82,7 +82,7 @@ docker run --rm --init \
 ```
 
 ```bash
-# Demo mode with sample employee database
+# Demo mode with sqlite sample employee database
 docker run --rm --init \
    --name dbhub \
    --publish 8080:8080 \
@@ -98,6 +98,9 @@ docker run --rm --init \
 ```bash
 # PostgreSQL example
 npx @bytebase/dbhub --transport http --port 8080 --dsn "postgres://user:password@localhost:5432/dbname?sslmode=disable"
+
+# Demo mode with sqlite sample employee database
+npx @bytebase/dbhub --transport http --port 8080 --demo
 ```
 
 ```bash
