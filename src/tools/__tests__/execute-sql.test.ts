@@ -9,7 +9,7 @@ vi.mock('../../connectors/manager.js');
 vi.mock('../../config/env.js');
 
 // Mock connector for testing
-const createMockConnector = (id: ConnectorType = 'postgres'): Connector => ({
+const createMockConnector = (id: ConnectorType = 'sqlite'): Connector => ({
   id,
   name: 'Mock Connector',
   dsnParser: {} as any,
@@ -36,7 +36,7 @@ describe('execute-sql tool', () => {
   const mockIsReadOnlyMode = vi.mocked(isReadOnlyMode);
 
   beforeEach(() => {
-    mockConnector = createMockConnector('postgres');
+    mockConnector = createMockConnector('sqlite');
     mockGetCurrentConnector.mockReturnValue(mockConnector);
     mockIsReadOnlyMode.mockReturnValue(false);
   });
