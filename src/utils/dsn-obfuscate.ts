@@ -17,6 +17,10 @@ export function obfuscateDSNPassword(dsn: string): string {
 
     const protocol = protocolMatch[1];
 
+    // For SQLite file paths, don't obfuscate
+    if (protocol === 'sqlite') {
+      return dsn;
+    }
 
     // For other databases, look for password pattern: ://user:password@host
     // We need to be careful with @ in passwords, so we'll find the last @ that separates password from host

@@ -28,6 +28,10 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+RUN pnpm pkg set pnpm.onlyBuiltDependencies[0]=better-sqlite3
+RUN pnpm add better-sqlite3
+RUN node -e 'new require("better-sqlite3")(":memory:")'
+
 # Install production dependencies only
 RUN pnpm install --prod
 

@@ -1,33 +1,27 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, ChildProcess } from 'child_process';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 describe('JSON RPC Integration Tests', () => {
   let serverProcess: ChildProcess | null = null;
+  let testDbPath: string;
   let baseUrl: string;
-  let container: StartedPostgreSqlContainer;
-  let connectionUri: string;
   const testPort = 3001;
 
   beforeAll(async () => {
-    console.log('Starting database container...');
-    container = await new PostgreSqlContainer('postgres:15-alpine')
-      .withDatabase('testdb')
-      .withUsername('testuser')
-      .withPassword('testpass')
-      .start();
-
-    console.log('Container started, getting connection details...');
-    connectionUri = container.getConnectionUri();
-    console.log(`Connection URI: ${connectionUri}`);
+    // Create a temporary SQLite database file
+    const tempDir = os.tmpdir();
+    testDbPath = path.join(tempDir, `json_rpc_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.db`);
     
     baseUrl = `http://localhost:${testPort}`;
     
-    // Start the server as a child process with the test container DSN
+    // Start the server as a child process
     serverProcess = spawn('pnpm', ['dev'], {
       env: {
         ...process.env,
-        DSN: connectionUri,
+        DSN: `sqlite://${testDbPath}`,
         TRANSPORT: 'http',
         PORT: testPort.toString(),
         NODE_ENV: 'test'
@@ -46,7 +40,7 @@ describe('JSON RPC Integration Tests', () => {
 
     // Wait for server to start up
     let serverReady = false;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 20; i++) {
       try {
         await new Promise(resolve => setTimeout(resolve, 1000));
         const response = await fetch(`${baseUrl}/message`, {
@@ -74,26 +68,21 @@ describe('JSON RPC Integration Tests', () => {
       throw new Error('Server did not start within expected time');
     }
     
-    console.log('Connected to database');
-    
     // Create test tables and data via HTTP request
     await makeJsonRpcCall('execute_sql', {
       sql: `
-        DROP TABLE IF EXISTS orders;
-        DROP TABLE IF EXISTS users;
-        
-        CREATE TABLE users (
-          id SERIAL PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
           name VARCHAR(100) NOT NULL,
           email VARCHAR(100) UNIQUE NOT NULL,
           age INTEGER
         );
         
-        CREATE TABLE orders (
-          id SERIAL PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS orders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER REFERENCES users(id),
           total DECIMAL(10,2),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         
         INSERT INTO users (name, email, age) VALUES 
@@ -107,20 +96,9 @@ describe('JSON RPC Integration Tests', () => {
         (2, 75.25);
       `
     });
-    
-    console.log('Test data setup complete');
-  }, 60000);
+  }, 30000);
 
   afterAll(async () => {
-    // Clean up test data
-    try {
-      await makeJsonRpcCall('execute_sql', {
-        sql: 'DROP TABLE IF EXISTS orders; DROP TABLE IF EXISTS users;'
-      });
-    } catch (error) {
-      console.error('Error cleaning up test data:', error);
-    }
-    
     // Kill the server process if it's still running
     if (serverProcess) {
       serverProcess.kill('SIGTERM');
@@ -141,9 +119,9 @@ describe('JSON RPC Integration Tests', () => {
       });
     }
     
-    // Stop the container
-    if (container) {
-      await container.stop();
+    // Clean up the test database file
+    if (testDbPath && fs.existsSync(testDbPath)) {
+      fs.unlinkSync(testDbPath);
     }
   });
 
@@ -156,7 +134,7 @@ describe('JSON RPC Integration Tests', () => {
       },
       body: JSON.stringify({
         jsonrpc: '2.0',
-        id: Math.random().toString(36).substring(2, 11),
+        id: Math.random().toString(36).substr(2, 9),
         method: 'tools/call',
         params: {
           name: method,
@@ -218,8 +196,8 @@ describe('JSON RPC Integration Tests', () => {
       const content = JSON.parse(response.result.content[0].text);
       expect(content.success).toBe(true);
       expect(content.data.rows).toHaveLength(2);
-      expect(parseFloat(content.data.rows[0].total)).toBe(149.50);
-      expect(parseFloat(content.data.rows[1].total)).toBe(99.99);
+      expect(content.data.rows[0].total).toBe(149.50);
+      expect(content.data.rows[1].total).toBe(99.99);
     });
 
     it('should execute aggregate queries successfully', async () => {
@@ -238,10 +216,10 @@ describe('JSON RPC Integration Tests', () => {
       const content = JSON.parse(response.result.content[0].text);
       expect(content.success).toBe(true);
       expect(content.data.rows).toHaveLength(1);
-      expect(parseInt(content.data.rows[0].user_count)).toBe(3);
-      expect(parseFloat(content.data.rows[0].avg_age)).toBe(30);
-      expect(parseInt(content.data.rows[0].min_age)).toBe(25);
-      expect(parseInt(content.data.rows[0].max_age)).toBe(35);
+      expect(content.data.rows[0].user_count).toBe(3);
+      expect(content.data.rows[0].avg_age).toBe(30);
+      expect(content.data.rows[0].min_age).toBe(25);
+      expect(content.data.rows[0].max_age).toBe(35);
     });
 
     it('should handle multiple statements in a single call', async () => {
@@ -256,15 +234,15 @@ describe('JSON RPC Integration Tests', () => {
       const content = JSON.parse(response.result.content[0].text);
       expect(content.success).toBe(true);
       expect(content.data.rows).toHaveLength(1);
-      expect(parseInt(content.data.rows[0].total_users)).toBe(4);
+      expect(content.data.rows[0].total_users).toBe(4);
     });
 
-    it('should handle PostgreSQL-specific functions', async () => {
+    it('should handle SQLite-specific functions', async () => {
       const response = await makeJsonRpcCall('execute_sql', {
         sql: `
           SELECT 
-            version() as version,
-            now() as current_time,
+            sqlite_version() as version,
+            datetime('now') as current_time,
             upper('hello world') as uppercase,
             length('test string') as str_length
         `
@@ -287,7 +265,7 @@ describe('JSON RPC Integration Tests', () => {
       expect(response).toHaveProperty('result');
       const content = JSON.parse(response.result.content[0].text);
       expect(content.success).toBe(false);
-      expect(content.error).toContain('does not exist');
+      expect(content.error).toContain('no such table');
       expect(content.code).toBe('EXECUTION_ERROR');
     });
 
@@ -303,10 +281,10 @@ describe('JSON RPC Integration Tests', () => {
       expect(content.data.count).toBe(0);
     });
 
-    it('should work with PostgreSQL transactions', async () => {
+    it('should work with SQLite transactions', async () => {
       const response = await makeJsonRpcCall('execute_sql', {
         sql: `
-          BEGIN;
+          BEGIN TRANSACTION;
           INSERT INTO users (name, email, age) VALUES ('Transaction User', 'transaction@example.com', 40);
           COMMIT;
           SELECT * FROM users WHERE email = 'transaction@example.com';
@@ -321,27 +299,23 @@ describe('JSON RPC Integration Tests', () => {
       expect(content.data.rows[0].age).toBe(40);
     });
 
-    it('should handle PostgreSQL information schema queries', async () => {
+    it('should handle PRAGMA statements', async () => {
       const response = await makeJsonRpcCall('execute_sql', {
-        sql: `
-          SELECT column_name, data_type, is_nullable 
-          FROM information_schema.columns 
-          WHERE table_name = 'users' 
-          ORDER BY ordinal_position
-        `
+        sql: 'PRAGMA table_info(users)'
       });
       
       expect(response).toHaveProperty('result');
       const content = JSON.parse(response.result.content[0].text);
       expect(content.success).toBe(true);
       expect(content.data.rows.length).toBeGreaterThan(0);
-      expect(content.data.rows.some((row: any) => row.column_name === 'id')).toBe(true);
-      expect(content.data.rows.some((row: any) => row.column_name === 'name')).toBe(true);
+      expect(content.data.rows.some((row: any) => row.name === 'id')).toBe(true);
+      expect(content.data.rows.some((row: any) => row.name === 'name')).toBe(true);
     });
   });
 
   describe('JSON RPC protocol compliance', () => {
     it('should return proper JSON RPC response structure', async () => {
+      const requestId = Math.random().toString(36).substr(2, 9);
       const response = await makeJsonRpcCall('execute_sql', {
         sql: 'SELECT 1 as test'
       });

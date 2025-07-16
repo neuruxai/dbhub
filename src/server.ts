@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { ConnectorManager } from "./connectors/manager.js";
 import { ConnectorRegistry } from "./connectors/interface.js";
 import { resolveDSN, resolveTransport, resolvePort, redactDSN, isReadOnlyMode, resolveAuthToken, isAuthRequired } from "./config/env.js";
+import { getSqliteInMemorySetupSql } from "./config/demo-loader.js";
 import { registerResources } from "./resources/index.js";
 import { registerTools } from "./tools/index.js";
 import { registerPrompts } from "./prompts/index.js";
@@ -85,7 +86,8 @@ export async function main(): Promise<void> {
 ERROR: Database connection string (DSN) is required.
 Please provide the DSN in one of these ways (in order of priority):
 
-1. Command line argument: --dsn="your-connection-string"
+1. Use demo mode: --demo (uses in-memory SQLite with sample employee database)
+2. Command line argument: --dsn="your-connection-string"
 3. Environment variable: export DSN="your-connection-string"
 4. .env file: DSN=your-connection-string
 
@@ -119,7 +121,13 @@ See documentation for more details on configuring database connections.
     console.error(`Connecting with DSN: ${redactDSN(dsnData.dsn)}`);
     console.error(`DSN source: ${dsnData.source}`);
 
-    await connectorManager.connectWithDSN(dsnData.dsn);
+    // If in demo mode, load the employee database
+    if (dsnData.isDemo) {
+      const initScript = getSqliteInMemorySetupSql();
+      await connectorManager.connectWithDSN(dsnData.dsn, initScript);
+    } else {
+      await connectorManager.connectWithDSN(dsnData.dsn);
+    }
 
     // Resolve transport type
     const transportData = resolveTransport();
@@ -134,6 +142,11 @@ See documentation for more details on configuring database connections.
     // Collect active modes
     const activeModes: string[] = [];
     const modeDescriptions: string[] = [];
+    
+    if (dsnData.isDemo) {
+      activeModes.push("DEMO");
+      modeDescriptions.push("using sample employee database");
+    }
     
     if (readonly) {
       activeModes.push("READ-ONLY");
@@ -253,6 +266,11 @@ See documentation for more details on configuring database connections.
           return res.sendStatus(200);
         }
         next();
+      });
+
+      // Health check endpoint
+      app.get("/healthz", (req, res) => {
+        res.status(200).send("OK");
       });
 
       // Main endpoint for streamable HTTP transport

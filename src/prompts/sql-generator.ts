@@ -36,6 +36,9 @@ export async function sqlGeneratorPromptHandler(
       case "postgres":
         sqlDialect = "postgres";
         break;
+      case "sqlite":
+        sqlDialect = "sqlite";
+        break;
       case "mysql":
         sqlDialect = "mysql";
         break;
@@ -114,6 +117,11 @@ export async function sqlGeneratorPromptHandler(
       const dialectExamples: Record<SQLDialect, string[]> = {
         postgres: [
           "SELECT * FROM users WHERE created_at > NOW() - INTERVAL '1 day'",
+          "SELECT u.name, COUNT(o.id) FROM users u JOIN orders o ON u.id = o.user_id GROUP BY u.name HAVING COUNT(o.id) > 5",
+          "SELECT product_name, price FROM products WHERE price > (SELECT AVG(price) FROM products)",
+        ],
+        sqlite: [
+          "SELECT * FROM users WHERE created_at > datetime('now', '-1 day')",
           "SELECT u.name, COUNT(o.id) FROM users u JOIN orders o ON u.id = o.user_id GROUP BY u.name HAVING COUNT(o.id) > 5",
           "SELECT product_name, price FROM products WHERE price > (SELECT AVG(price) FROM products)",
         ],

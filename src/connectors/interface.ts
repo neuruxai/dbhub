@@ -1,7 +1,7 @@
 /**
  * Type definition for supported database connector types
  */
-export type ConnectorType = "postgres" | "mysql" | "mariadb" | "sqlserver";
+export type ConnectorType = "postgres" | "mysql" | "mariadb" | "sqlite" | "sqlserver";
 
 /**
  * Database Connector Interface
@@ -46,6 +46,7 @@ export interface DSNParser {
    * - PostgreSQL: "postgres://user:password@localhost:5432/dbname?sslmode=disable"
    * - MariaDB: "mariadb://user:password@localhost:3306/dbname"
    * - MySQL: "mysql://user:password@localhost:3306/dbname"
+   * - SQLite: "sqlite:///path/to/database.db" or "sqlite:///:memory:"
    */
   parse(dsn: string): Promise<any>;
 
@@ -88,6 +89,7 @@ export interface Connector {
    *   - PostgreSQL: 'public' schema
    *   - SQL Server: 'dbo' schema
    *   - MySQL: Current active database from connection (DATABASE())
+   *   - SQLite: Main database (schema concept doesn't exist in SQLite)
    * @returns Promise with array of table names
    */
   getTables(schema?: string): Promise<string[]>;
